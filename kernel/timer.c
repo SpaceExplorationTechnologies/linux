@@ -76,6 +76,7 @@ struct tvec_root {
 struct tvec_base {
 	spinlock_t lock;
 	struct timer_list *running_timer;
+	wait_queue_head_t wait_for_running_timer;
 	unsigned long timer_jiffies;
 	unsigned long next_timer;
 	struct tvec_root tv1;
@@ -729,12 +730,15 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
 
 	debug_activate(timer, expires);
 
+	preempt_disable_rt();
 	cpu = smp_processor_id();
 
 #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
 	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
 		cpu = get_nohz_timer_target();
 #endif
+	preempt_enable_rt();
+
 	new_base = per_cpu(tvec_bases, cpu);
 
 	if (base != new_base) {
@@ -935,6 +939,29 @@ void add_timer_on(struct timer_list *timer, int cpu)
 }
 EXPORT_SYMBOL_GPL(add_timer_on);
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+/*
+ * Wait for a running timer
+ */
+static void wait_for_running_timer(struct timer_list *timer)
+{
+	struct tvec_base *base = timer->base;
+
+	if (base->running_timer == timer)
+		wait_event(base->wait_for_running_timer,
+			   base->running_timer != timer);
+}
+
+# define wakeup_timer_waiters(b)	wake_up(&(b)->wait_for_tunning_timer)
+#else
+static inline void wait_for_running_timer(struct timer_list *timer)
+{
+	cpu_relax();
+}
+
+# define wakeup_timer_waiters(b)	do { } while (0)
+#endif
+
 /**
  * del_timer - deactive a timer.
  * @timer: the timer to be deactivated
@@ -1007,7 +1034,7 @@ out:
 }
 EXPORT_SYMBOL(try_to_del_timer_sync);
 
-#ifdef CONFIG_SMP
+#if defined(CONFIG_SMP) || defined(CONFIG_PREEMPT_RT_FULL)
 /**
  * del_timer_sync - deactivate a timer and wait for the handler to finish.
  * @timer: the timer to be deactivated
@@ -1067,7 +1094,7 @@ int del_timer_sync(struct timer_list *timer)
 		int ret = try_to_del_timer_sync(timer);
 		if (ret >= 0)
 			return ret;
-		cpu_relax();
+		wait_for_running_timer(timer);
 	}
 }
 EXPORT_SYMBOL(del_timer_sync);
@@ -1178,10 +1205,11 @@ static inline void __run_timers(struct tvec_base *base)
 
 			spin_unlock_irq(&base->lock);
 			call_timer_fn(timer, fn, data);
+			base->running_timer = NULL;
 			spin_lock_irq(&base->lock);
 		}
 	}
-	base->running_timer = NULL;
+	wake_up(&base->wait_for_running_timer);
 	spin_unlock_irq(&base->lock);
 }
 
@@ -1683,11 +1711,11 @@ static int __cpuinit init_timers_cpu(int cpu)
 			base = &boot_tvec_bases;
 		}
 		spin_lock_init(&base->lock);
+		init_waitqueue_head(&base->wait_for_running_timer);
 		tvec_base_done[cpu] = 1;
 	} else {
 		base = per_cpu(tvec_bases, cpu);
 	}
-
 
 	for (j = 0; j < TVN_SIZE; j++) {
 		INIT_LIST_HEAD(base->tv5.vec + j);
