@@ -71,6 +71,7 @@
 #include <linux/file.h>
 #include <linux/ptrace.h>
 #include <linux/random.h>
+#include <linux/posix-timers.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
