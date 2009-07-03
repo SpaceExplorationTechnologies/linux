@@ -566,10 +566,15 @@ void tty_flip_buffer_push(struct tty_struct *tty)
 		buf->tail->commit = buf->tail->used;
 	spin_unlock_irqrestore(&buf->lock, flags);
 
+#ifndef CONFIG_PREEMPT_RT_FULL
 	if (tty->low_latency)
 		flush_to_ldisc(&buf->work);
 	else
 		schedule_work(&buf->work);
+#else
+	flush_to_ldisc(&buf->work);
+#endif
+
 }
 EXPORT_SYMBOL(tty_flip_buffer_push);
 
