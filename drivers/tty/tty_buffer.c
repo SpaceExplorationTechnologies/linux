@@ -509,10 +509,14 @@ void tty_flip_buffer_push(struct tty_port *port)
 
 	buf->tail->commit = buf->tail->used;
 
+#ifndef CONFIG_PREEMPT_RT_FULL
 	if (port->low_latency)
 		flush_to_ldisc(&buf->work);
 	else
 		schedule_work(&buf->work);
+#else
+	schedule_work(&buf->work);
+#endif
 }
 EXPORT_SYMBOL(tty_flip_buffer_push);
 
