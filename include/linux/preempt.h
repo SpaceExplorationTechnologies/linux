@@ -48,11 +48,13 @@ do { \
 	barrier(); \
 } while (0)
 
-#define preempt_enable_no_resched() \
+#define __preempt_enable_no_resched() \
 do { \
 	barrier(); \
 	dec_preempt_count(); \
 } while (0)
+
+#define preempt_enable_no_resched()	__preempt_enable_no_resched()
 
 #define preempt_enable() \
 do { \
@@ -98,6 +100,7 @@ do { \
  * region.
  */
 #define preempt_disable()		barrier()
+#define __preempt_enable_no_resched()	barrier()
 #define preempt_enable_no_resched()	barrier()
 #define preempt_enable()		barrier()
 
