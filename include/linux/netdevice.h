@@ -1783,6 +1783,7 @@ struct softnet_data {
 	unsigned int		dropped;
 	struct sk_buff_head	input_pkt_queue;
 	struct napi_struct	backlog;
+	struct sk_buff_head	tofree_queue;
 };
 
 static inline void input_queue_head_incr(struct softnet_data *sd)
