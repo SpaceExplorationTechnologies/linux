@@ -83,7 +83,11 @@
 /*
  * The preempt_count offset after spin_lock()
  */
+#ifdef CONFIG_PREEMPT_RT_FULL
+#define PREEMPT_LOCK_OFFSET	0
+#else
 #define PREEMPT_LOCK_OFFSET	PREEMPT_DISABLE_OFFSET
+#endif
 
 /*
  * The preempt_count offset needed for things like:
