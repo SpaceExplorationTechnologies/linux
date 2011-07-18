@@ -1374,6 +1374,7 @@ bad_gs:
 	jmp  2b
 	.previous
 
+#ifndef CONFIG_PREEMPT_RT_FULL
 /* Call softirq on interrupt stack. Interrupts are off. */
 ENTRY(do_softirq_own_stack)
 	CFI_STARTPROC
@@ -1393,6 +1394,7 @@ ENTRY(do_softirq_own_stack)
 	ret
 	CFI_ENDPROC
 END(do_softirq_own_stack)
+#endif
 
 #ifdef CONFIG_XEN
 zeroentry xen_hypervisor_callback xen_do_hypervisor_callback
