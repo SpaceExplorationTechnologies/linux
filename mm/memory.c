@@ -3202,6 +3202,7 @@ unlock:
 	return 0;
 }
 
+#ifdef CONFIG_PREEMPT_RT_FULL
 void pagefault_disable(void)
 {
 	preempt_count_inc();
@@ -3216,21 +3217,16 @@ EXPORT_SYMBOL(pagefault_disable);
 
 void pagefault_enable(void)
 {
-#ifndef CONFIG_PREEMPT
 	/*
 	 * make sure to issue those last loads/stores before enabling
 	 * the pagefault handler again.
 	 */
 	barrier();
 	current->pagefault_disabled--;
-	preempt_count_dec();
-#else
-	barrier();
-	current->pagefault_disabled--;
 	preempt_enable();
-#endif
 }
 EXPORT_SYMBOL(pagefault_enable);
+#endif
 
 /*
  * By the time we get here, we already hold the mm semaphore
