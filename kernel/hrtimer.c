@@ -1058,30 +1058,19 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
 	 *
 	 * XXX send_remote_softirq() ?
 	 */
-	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)) {
-#ifdef CONFIG_PREEMPT_RT_BASE
-again:
-		if (hrtimer_enqueue_reprogram(timer, new_base)) {
-			/*
-			 * Move softirq based timers away from the rbtree in
-			 * case it expired already. Otherwise we would have a
-			 * stale base->first entry until the softirq runs.
-			 */
-			if (!hrtimer_rt_defer(timer)) {
-				ktime_t now = ktime_get();
+	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
+		&& hrtimer_enqueue_reprogram(timer, new_base)) {
 
-				__run_hrtimer(timer, &now);
-				/*
-				 * __run_hrtimer might have requeued timer and
-				 * it could be base->first again.
-				 */
-				if (&timer->node == base->active.next)
-					goto again;
-			}
-#else
-	if (base->cpu_base->hres_active && hrtimer_reprogram(timer, base)) {
+		if (wakeup
+#ifdef CONFIG_PREEMPT_RT_BASE
+		    /*
+		     * Move softirq based timers away from the rbtree in
+		     * case it expired already. Otherwise we would have a
+		     * stale base->first entry until the softirq runs.
+		     */
+		    && hrtimer_rt_defer(timer)
 #endif
-		if (wakeup) {
+			) {
 			/*
 			 * We need to drop cpu_base->lock to avoid a
 			 * lock ordering issue vs. rq->lock.
@@ -1090,9 +1079,18 @@ again:
 			raise_softirq_irqoff(HRTIMER_SOFTIRQ);
 			local_irq_restore(flags);
 			return ret;
-		} else {
-			__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
 		}
+
+		/*
+		 * In case we failed to reprogram the timer (mostly
+		 * because out current timer is already elapsed),
+		 * remove it again and report a failure. This avoids
+		 * stale base->first entries.
+		 */
+		debug_deactivate(timer);
+		__remove_hrtimer(timer, new_base,
+				 timer->state & HRTIMER_STATE_CALLBACK, 0);
+		ret = -ETIME;
 	}
 
 	unlock_hrtimer_base(timer, &flags);
