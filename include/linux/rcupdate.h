@@ -229,13 +229,7 @@ static inline int rcu_preempt_depth(void)
 /* Internal to kernel */
 extern void rcu_init(void);
 extern void rcu_sched_qs(int cpu);
-
-#ifdef CONFIG_PREEMPT_RT_FULL
-static inline void rcu_bh_qs(int cpu) { }
-#else
 extern void rcu_bh_qs(int cpu);
-#endif
-
 extern void rcu_check_callbacks(int cpu, int user);
 struct notifier_block;
 extern void rcu_idle_enter(void);
