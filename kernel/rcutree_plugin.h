@@ -1519,7 +1519,7 @@ static void __cpuinit rcu_prepare_kthreads(int cpu)
 
 #endif /* #else #ifdef CONFIG_RCU_BOOST */
 
-#if !defined(CONFIG_RCU_FAST_NO_HZ)
+#if !defined(CONFIG_RCU_FAST_NO_HZ) || defined(CONFIG_PREEMPT_RT_FULL)
 
 /*
  * Check to see if any future RCU-related work will need to be done
@@ -1535,6 +1535,9 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
 	*delta_jiffies = ULONG_MAX;
 	return rcu_cpu_has_callbacks(cpu);
 }
+#endif	/* !defined(CONFIG_RCU_FAST_NO_HZ) || defined(CONFIG_PREEMPT_RT_FULL) */
+
+#if !defined(CONFIG_RCU_FAST_NO_HZ)
 
 /*
  * Because we do not have RCU_FAST_NO_HZ, don't bother initializing for it.
@@ -1651,6 +1654,7 @@ static bool rcu_cpu_has_nonlazy_callbacks(int cpu)
 	       rcu_preempt_cpu_has_nonlazy_callbacks(cpu);
 }
 
+#ifndef CONFIG_PREEMPT_RT_FULL
 /*
  * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
  * callbacks on this CPU, (2) this CPU has not yet attempted to enter
@@ -1694,6 +1698,7 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
 	}
 	return 0;
 }
+#endif	/* #ifndef CONFIG_PREEMPT_RT_FULL */
 
 /*
  * Handler for smp_call_function_single().  The only point of this
