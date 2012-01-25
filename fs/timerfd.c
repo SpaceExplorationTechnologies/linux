@@ -324,7 +324,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
 		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
 			break;
 		spin_unlock_irq(&ctx->wqh.lock);
-		cpu_relax();
+		hrtimer_wait_for_timer(&ctx->tmr);
 	}
 
 	/*
