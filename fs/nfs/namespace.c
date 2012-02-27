@@ -67,7 +67,7 @@ rename_retry:
 	seq = read_seqbegin(&rename_lock);
 	rcu_read_lock();
 	while (1) {
-		spin_lock(&dentry->d_lock);
+		seq_spin_lock(&dentry->d_lock);
 		if (IS_ROOT(dentry))
 			break;
 		namelen = dentry->d_name.len;
@@ -77,17 +77,17 @@ rename_retry:
 		end -= namelen;
 		memcpy(end, dentry->d_name.name, namelen);
 		*--end = '/';
-		spin_unlock(&dentry->d_lock);
+		seq_spin_unlock(&dentry->d_lock);
 		dentry = dentry->d_parent;
 	}
 	if (read_seqretry(&rename_lock, seq)) {
-		spin_unlock(&dentry->d_lock);
+		seq_spin_unlock(&dentry->d_lock);
 		rcu_read_unlock();
 		goto rename_retry;
 	}
 	if ((flags & NFS_PATH_CANONICAL) && *end != '/') {
 		if (--buflen < 0) {
-			spin_unlock(&dentry->d_lock);
+			seq_spin_unlock(&dentry->d_lock);
 			rcu_read_unlock();
 			goto Elong;
 		}
@@ -96,7 +96,7 @@ rename_retry:
 	*p = end;
 	base = dentry->d_fsdata;
 	if (!base) {
-		spin_unlock(&dentry->d_lock);
+		seq_spin_unlock(&dentry->d_lock);
 		rcu_read_unlock();
 		WARN_ON(1);
 		return end;
@@ -109,17 +109,17 @@ rename_retry:
 	}
 	buflen -= namelen;
 	if (buflen < 0) {
-		spin_unlock(&dentry->d_lock);
+		seq_spin_unlock(&dentry->d_lock);
 		rcu_read_unlock();
 		goto Elong;
 	}
 	end -= namelen;
 	memcpy(end, base, namelen);
-	spin_unlock(&dentry->d_lock);
+	seq_spin_unlock(&dentry->d_lock);
 	rcu_read_unlock();
 	return end;
 Elong_unlock:
-	spin_unlock(&dentry->d_lock);
+	seq_spin_unlock(&dentry->d_lock);
 	rcu_read_unlock();
 	if (read_seqretry(&rename_lock, seq))
 		goto rename_retry;
