@@ -19,6 +19,7 @@
 #include <linux/mm.h>
 #include <linux/fs.h>
 #include <linux/fsnotify.h>
+#include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/hash.h>
@@ -470,7 +471,7 @@ EXPORT_SYMBOL(d_drop);
 
 static void __dentry_kill(struct dentry *dentry)
 {
-	struct dentry *parent = NULL;
+struct dentry *parent = NULL;
 	bool can_free = true;
 	if (!IS_ROOT(dentry))
 		parent = dentry->d_parent;
@@ -550,7 +551,7 @@ static struct dentry *dentry_kill(struct dentry *dentry)
 
 failed:
 	spin_unlock(&dentry->d_lock);
-	cpu_relax();
+	cpu_chill();
 	return dentry; /* try again with same dentry */
 }
 
@@ -928,7 +929,7 @@ static void shrink_dentry_list(struct list_head *list)
 				spin_unlock(&dentry->d_lock);
 				if (parent)
 					spin_unlock(&parent->d_lock);
-				cpu_relax();
+				cpu_chill();
 				continue;
 			}
 			__dentry_kill(dentry);
@@ -2297,7 +2298,7 @@ again:
 	if (dentry->d_lockref.count == 1) {
 		if (!spin_trylock(&inode->i_lock)) {
 			spin_unlock(&dentry->d_lock);
-			cpu_relax();
+			cpu_chill();
 			goto again;
 		}
 		dentry->d_flags &= ~DCACHE_CANT_MOUNT;

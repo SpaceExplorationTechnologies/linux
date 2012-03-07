@@ -23,6 +23,7 @@
 #include <linux/uaccess.h>
 #include <linux/proc_ns.h>
 #include <linux/magic.h>
+#include <linux/delay.h>
 #include "pnode.h"
 #include "internal.h"
 
@@ -317,7 +318,7 @@ int __mnt_want_write(struct vfsmount *m)
 	smp_mb();
 	while (ACCESS_ONCE(mnt->mnt.mnt_flags) & MNT_WRITE_HOLD) {
 		preempt_enable();
-		cpu_relax();
+		cpu_chill();
 		preempt_disable();
 	}
 	/*
