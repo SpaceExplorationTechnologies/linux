@@ -20,6 +20,7 @@
 #include <linux/fs_struct.h>	/* get_fs_root et.al. */
 #include <linux/fsnotify.h>	/* fsnotify_vfsmount_delete */
 #include <linux/uaccess.h>
+#include <linux/delay.h>
 #include "pnode.h"
 #include "internal.h"
 
@@ -313,7 +314,7 @@ int __mnt_want_write(struct vfsmount *m)
 	smp_mb();
 	while (mnt->mnt.mnt_flags & MNT_WRITE_HOLD) {
 		preempt_enable();
-		cpu_relax();
+		cpu_chill();
 		preempt_disable();
 	}
 	/*
