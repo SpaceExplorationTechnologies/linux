@@ -1914,6 +1914,9 @@ int rcu_needs_cpu(int cpu)
 {
 	return rcu_cpu_has_callbacks(cpu);
 }
+#endif	/* !defined(CONFIG_RCU_FAST_NO_HZ) || defined(CONFIG_PREEMPT_RT_FULL) */
+
+#if !defined(CONFIG_RCU_FAST_NO_HZ)
 
 /*
  * Because we do not have RCU_FAST_NO_HZ, don't bother initializing for it.
@@ -1984,6 +1987,7 @@ static DEFINE_PER_CPU(struct hrtimer, rcu_idle_gp_timer);
 static ktime_t rcu_idle_gp_wait;	/* If some non-lazy callbacks. */
 static ktime_t rcu_idle_lazy_gp_wait;	/* If only lazy callbacks. */
 
+#ifndef CONFIG_PREEMPT_RT_FULL
 /*
  * Allow the CPU to enter dyntick-idle mode if either: (1) There are no
  * callbacks on this CPU, (2) this CPU has not yet attempted to enter
@@ -2001,6 +2005,7 @@ int rcu_needs_cpu(int cpu)
 	/* Otherwise, RCU needs the CPU only if it recently tried and failed. */
 	return per_cpu(rcu_dyntick_holdoff, cpu) == jiffies;
 }
+#endif	/* #ifndef CONFIG_PREEMPT_RT_FULL */
 
 /*
  * Does the specified flavor of RCU have non-lazy callbacks pending on
