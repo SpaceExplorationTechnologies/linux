@@ -1355,7 +1355,7 @@ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
 	u64 secs, nsecs;
 
 	do {
-		seq = read_seqbegin(&timekeeper.lock);
+		seq = read_seqcount_begin(&timekeeper.seq);
 
 		secs = timekeeper.xtime.tv_sec;
 		nsecs = timekeeper.xtime.tv_nsec;
@@ -1373,7 +1373,7 @@ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
 		if (unlikely(now.tv64 >= timekeeper.next_leap_ktime.tv64))
 			*offs_real = ktime_sub(timekeeper.offs_real, ktime_set(1, 0));
 
-	} while (read_seqretry(&timekeeper.lock, seq));
+	} while (read_seqcount_retry(&timekeeper.seq, seq));
 
 	return now;
 }
