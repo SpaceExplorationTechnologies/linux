@@ -362,9 +362,6 @@ int second_overflow(unsigned long secs)
 	int leap = 0;
 	s64 delta;
 
-	raw_spin_lock(&xtime_lock);
-	write_seqcount_begin(&xtime_seq);
-
 	/*
 	 * Leap second processing. If in leap-insert state at the end of the
 	 * day, the system clock is set back one second; if in leap-delete
@@ -404,9 +401,6 @@ int second_overflow(unsigned long secs)
 			time_state = TIME_OK;
 		break;
 	}
-
-	write_seqcount_end(&xtime_seq);
-	raw_spin_unlock(&xtime_lock);
 
 	/* Bump the maxerror field */
 	time_maxerror += MAXFREQ / NSEC_PER_USEC;
