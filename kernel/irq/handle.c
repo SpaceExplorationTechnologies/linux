@@ -132,6 +132,8 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
 irqreturn_t
 handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 {
+	struct pt_regs *regs = get_irq_regs();
+	u64 ip = regs ? instruction_pointer(regs) : 0;
 	irqreturn_t retval = IRQ_NONE;
 	unsigned int flags = 0, irq = desc->irq_data.irq;
 
@@ -173,8 +175,9 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 	} while (action);
 
 #ifndef CONFIG_PREEMPT_RT_FULL
-	/* FIXME: Can we unbreak that ? */
-	add_interrupt_randomness(irq, flags);
+	add_interrupt_randomness(irq, flags, ip);
+#else
+	desc->random_ip = ip;
 #endif
 
 	if (!noirqdebug)
