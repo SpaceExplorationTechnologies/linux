@@ -60,6 +60,7 @@
 #include <linux/scatterlist.h>
 #include <linux/errqueue.h>
 #include <linux/prefetch.h>
+#include <linux/locallock.h>
 
 #include <net/protocol.h>
 #include <net/dst.h>
@@ -347,6 +348,7 @@ struct netdev_alloc_cache {
 	unsigned int		pagecnt_bias;
 };
 static DEFINE_PER_CPU(struct netdev_alloc_cache, netdev_alloc_cache);
+static DEFINE_LOCAL_IRQ_LOCK(netdev_alloc_lock);
 
 #define NETDEV_FRAG_PAGE_MAX_ORDER get_order(32768)
 #define NETDEV_FRAG_PAGE_MAX_SIZE  (PAGE_SIZE << NETDEV_FRAG_PAGE_MAX_ORDER)
@@ -359,7 +361,7 @@ static void *__netdev_alloc_frag(unsigned int fragsz, gfp_t gfp_mask)
 	int order;
 	unsigned long flags;
 
-	local_irq_save(flags);
+	local_lock_irqsave(netdev_alloc_lock, flags);
 	nc = &__get_cpu_var(netdev_alloc_cache);
 	if (unlikely(!nc->frag.page)) {
 refill:
@@ -393,7 +395,7 @@ recycle:
 	nc->frag.offset += fragsz;
 	nc->pagecnt_bias--;
 end:
-	local_irq_restore(flags);
+	local_unlock_irqrestore(netdev_alloc_lock, flags);
 	return data;
 }
 
