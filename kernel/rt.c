@@ -213,17 +213,16 @@ int __lockfunc rt_read_trylock(rwlock_t *rwlock)
 	 */
 	if (rt_mutex_owner(lock) != current) {
 		ret = rt_mutex_trylock(lock);
-		if (ret)
+		if (ret) {
+			rwlock_acquire(&rwlock->dep_map, 0, 1, _RET_IP_);
 			migrate_disable();
-
+		}
 	} else if (!rwlock->read_depth) {
 		ret = 0;
 	}
 
-	if (ret) {
+	if (ret)
 		rwlock->read_depth++;
-		rwlock_acquire_read(&rwlock->dep_map, 0, 1, _RET_IP_);
-	}
 
 	return ret;
 }
@@ -241,12 +240,11 @@ void __lockfunc rt_read_lock(rwlock_t *rwlock)
 {
 	struct rt_mutex *lock = &rwlock->lock;
 
-	rwlock_acquire_read(&rwlock->dep_map, 0, 0, _RET_IP_);
-
 	/*
 	 * recursive read locks succeed when current owns the lock
 	 */
 	if (rt_mutex_owner(lock) != current) {
+		rwlock_acquire(&rwlock->dep_map, 0, 0, _RET_IP_);
 		__rt_spin_lock(lock);
 		migrate_disable();
 	}
@@ -266,10 +264,9 @@ EXPORT_SYMBOL(rt_write_unlock);
 
 void __lockfunc rt_read_unlock(rwlock_t *rwlock)
 {
-	rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
-
 	/* Release the lock only when read_depth is down to 0 */
 	if (--rwlock->read_depth == 0) {
+		rwlock_release(&rwlock->dep_map, 1, _RET_IP_);
 		__rt_spin_unlock(&rwlock->lock);
 		migrate_enable();
 	}
@@ -319,9 +316,10 @@ EXPORT_SYMBOL(rt_up_write);
 
 void  rt_up_read(struct rw_semaphore *rwsem)
 {
-	rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
-	if (--rwsem->read_depth == 0)
+	if (--rwsem->read_depth == 0) {
+		rwsem_release(&rwsem->dep_map, 1, _RET_IP_);
 		rt_mutex_unlock(&rwsem->lock);
+	}
 }
 EXPORT_SYMBOL(rt_up_read);
 
@@ -360,6 +358,13 @@ void  rt_down_write_nested(struct rw_semaphore *rwsem, int subclass)
 }
 EXPORT_SYMBOL(rt_down_write_nested);
 
+void rt_down_write_nested_lock(struct rw_semaphore *rwsem,
+		struct lockdep_map *nest)
+{
+	rwsem_acquire_nest(&rwsem->dep_map, 0, 0, nest, _RET_IP_);
+	rt_mutex_lock(&rwsem->lock);
+}
+
 int  rt_down_read_trylock(struct rw_semaphore *rwsem)
 {
 	struct rt_mutex *lock = &rwsem->lock;
@@ -370,15 +375,16 @@ int  rt_down_read_trylock(struct rw_semaphore *rwsem)
 	 * but not when read_depth == 0 which means that the rwsem is
 	 * write locked.
 	 */
-	if (rt_mutex_owner(lock) != current)
+	if (rt_mutex_owner(lock) != current) {
 		ret = rt_mutex_trylock(&rwsem->lock);
-	else if (!rwsem->read_depth)
+		if (ret)
+			rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
+	} else if (!rwsem->read_depth) {
 		ret = 0;
-
-	if (ret) {
-		rwsem->read_depth++;
-		rwsem_acquire(&rwsem->dep_map, 0, 1, _RET_IP_);
 	}
+
+	if (ret)
+		rwsem->read_depth++;
 	return ret;
 }
 EXPORT_SYMBOL(rt_down_read_trylock);
@@ -387,10 +393,10 @@ static void __rt_down_read(struct rw_semaphore *rwsem, int subclass)
 {
 	struct rt_mutex *lock = &rwsem->lock;
 
-	rwsem_acquire_read(&rwsem->dep_map, subclass, 0, _RET_IP_);
-
-	if (rt_mutex_owner(lock) != current)
+	if (rt_mutex_owner(lock) != current) {
+		rwsem_acquire(&rwsem->dep_map, subclass, 0, _RET_IP_);
 		rt_mutex_lock(&rwsem->lock);
+	}
 	rwsem->read_depth++;
 }
 
