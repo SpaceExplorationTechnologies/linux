@@ -108,6 +108,7 @@ struct intel_shared_regs {
 	struct er_account       regs[EXTRA_REG_MAX];
 	int                     refcnt;		/* per-core: #HT threads */
 	unsigned                core_id;	/* per-core: core id */
+	struct rcu_head		rcu;
 };
 
 #define MAX_LBR_ENTRIES		16
