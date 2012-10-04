@@ -421,6 +421,7 @@ struct intel_uncore_box {
 	struct hrtimer hrtimer;
 	struct list_head list;
 	struct intel_uncore_extra_reg shared_regs[0];
+	struct rcu_head rcu;
 };
 
 #define UNCORE_BOX_FLAG_INITIATED	0

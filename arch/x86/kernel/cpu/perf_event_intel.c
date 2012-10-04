@@ -1721,7 +1721,7 @@ static void intel_pmu_cpu_dying(int cpu)
 	pc = cpuc->shared_regs;
 	if (pc) {
 		if (pc->core_id == -1 || --pc->refcnt == 0)
-			kfree(pc);
+			kfree_rcu(pc, rcu);
 		cpuc->shared_regs = NULL;
 	}
 
