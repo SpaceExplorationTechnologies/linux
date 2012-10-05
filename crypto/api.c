@@ -31,7 +31,7 @@ EXPORT_SYMBOL_GPL(crypto_alg_list);
 DECLARE_RWSEM(crypto_alg_sem);
 EXPORT_SYMBOL_GPL(crypto_alg_sem);
 
-BLOCKING_NOTIFIER_HEAD(crypto_chain);
+SRCU_NOTIFIER_HEAD(crypto_chain);
 EXPORT_SYMBOL_GPL(crypto_chain);
 
 static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
@@ -237,10 +237,10 @@ int crypto_probing_notify(unsigned long val, void *v)
 {
 	int ok;
 
-	ok = blocking_notifier_call_chain(&crypto_chain, val, v);
+	ok = srcu_notifier_call_chain(&crypto_chain, val, v);
 	if (ok == NOTIFY_DONE) {
 		request_module("cryptomgr");
-		ok = blocking_notifier_call_chain(&crypto_chain, val, v);
+		ok = srcu_notifier_call_chain(&crypto_chain, val, v);
 	}
 
 	return ok;
