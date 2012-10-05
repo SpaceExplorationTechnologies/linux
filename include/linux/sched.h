@@ -1643,6 +1643,9 @@ struct task_struct {
 	pte_t kmap_pte[KM_TYPE_NR];
 # endif
 #endif
+#ifdef CONFIG_DEBUG_PREEMPT
+	unsigned long preempt_disable_ip;
+#endif
 };
 
 #ifdef CONFIG_NUMA_BALANCING
