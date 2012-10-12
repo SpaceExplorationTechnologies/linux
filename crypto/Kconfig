@@ -13,7 +13,7 @@ source "crypto/async_tx/Kconfig"
 # Cryptographic API Configuration
 #
 menuconfig CRYPTO
-	tristate "Cryptographic API"
+	bool "Cryptographic API"
 	help
 	  This option provides the core Cryptographic API.
 

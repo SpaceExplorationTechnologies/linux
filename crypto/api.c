@@ -34,6 +34,13 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
 struct srcu_notifier_head crypto_chain;
 EXPORT_SYMBOL_GPL(crypto_chain);
 
+static int __init crypto_api_init(void)
+{
+	srcu_init_notifier_head(&crypto_chain);
+	return 0;
+}
+core_initcall(crypto_api_init);
+
 struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
 {
 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
