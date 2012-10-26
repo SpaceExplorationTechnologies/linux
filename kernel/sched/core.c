@@ -623,6 +623,38 @@ void resched_curr(struct rq *rq)
 		trace_sched_wake_idle_without_ipi(cpu);
 }
 
+#ifdef CONFIG_PREEMPT_LAZY
+void resched_curr_lazy(struct rq *rq)
+{
+	struct task_struct *curr = rq->curr;
+	int cpu;
+
+	if (!sched_feat(PREEMPT_LAZY)) {
+		resched_curr(rq);
+		return;
+	}
+
+	lockdep_assert_held(&rq->lock);
+
+	if (test_tsk_need_resched(curr))
+		return;
+
+	if (test_tsk_need_resched_lazy(curr))
+		return;
+
+	set_tsk_need_resched_lazy(curr);
+
+	cpu = cpu_of(rq);
+	if (cpu == smp_processor_id())
+		return;
+
+	/* NEED_RESCHED_LAZY must be visible before we test polling */
+	smp_mb();
+	if (!tsk_is_polling(curr))
+		smp_send_reschedule(cpu);
+}
+#endif
+
 void resched_cpu(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
@@ -2040,6 +2072,9 @@ int sched_fork(unsigned long clone_flags, struct task_struct *p)
 	p->on_cpu = 0;
 #endif
 	init_task_preempt_count(p);
+#ifdef CONFIG_HAVE_PREEMPT_LAZY
+	task_thread_info(p)->preempt_lazy_count = 0;
+#endif
 #ifdef CONFIG_SMP
 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
 	RB_CLEAR_NODE(&p->pushable_dl_tasks);
@@ -2803,6 +2838,7 @@ void migrate_disable(void)
 	}
 
 	preempt_disable();
+	preempt_lazy_disable();
 	pin_current_cpu();
 	p->migrate_disable = 1;
 	preempt_enable();
@@ -2860,6 +2896,7 @@ void migrate_enable(void)
 
 	unpin_current_cpu();
 	preempt_enable();
+	preempt_lazy_enable();
 }
 EXPORT_SYMBOL(migrate_enable);
 #else
@@ -2993,6 +3030,7 @@ static void __sched __schedule(void)
 
 	next = pick_next_task(rq, prev);
 	clear_tsk_need_resched(prev);
+	clear_tsk_need_resched_lazy(prev);
 	clear_preempt_need_resched();
 	rq->clock_skip_update = 0;
 
@@ -3137,6 +3175,14 @@ asmlinkage __visible void __sched notrace preempt_schedule_context(void)
 	if (likely(!preemptible()))
 		return;
 
+#ifdef CONFIG_PREEMPT_LAZY
+	/*
+	 * Check for lazy preemption
+	 */
+	if (current_thread_info()->preempt_lazy_count &&
+			!test_thread_flag(TIF_NEED_RESCHED))
+		return;
+#endif
 	do {
 		__preempt_count_add(PREEMPT_ACTIVE);
 		/*
@@ -4862,7 +4908,9 @@ void init_idle(struct task_struct *idle, int cpu)
 
 	/* Set the preempt count _outside_ the spinlocks! */
 	init_idle_preempt_count(idle, cpu);
-
+#ifdef CONFIG_HAVE_PREEMPT_LAZY
+	task_thread_info(idle)->preempt_lazy_count = 0;
+#endif
 	/*
 	 * The idle tasks have their own, simple scheduling class:
 	 */
