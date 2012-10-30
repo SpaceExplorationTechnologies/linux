@@ -956,7 +956,6 @@ EXPORT_SYMBOL_GPL(crypto_xor);
 
 static int __init crypto_algapi_init(void)
 {
-	srcu_init_notifier_head(&crypto_chain);
 	crypto_init_proc();
 	return 0;
 }
