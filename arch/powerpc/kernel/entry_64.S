@@ -580,7 +580,7 @@ _GLOBAL(ret_from_except_lite)
 	andi.	r0,r4,_TIF_USER_WORK_MASK
 	beq	restore
 
-	andi.	r0,r4,_TIF_NEED_RESCHED
+	andi.	r0,r4,_TIF_NEED_RESCHED_MASK
 	beq	1f
 	bl	.restore_interrupts
 	bl	.schedule
@@ -595,11 +595,16 @@ _GLOBAL(ret_from_except_lite)
 resume_kernel:
 #ifdef CONFIG_PREEMPT
 	/* Check if we need to preempt */
-	andi.	r0,r4,_TIF_NEED_RESCHED
-	beq+	restore
-	/* Check that preempt_count() == 0 and interrupts are enabled */
 	lwz	r8,TI_PREEMPT(r9)
-	cmpwi	cr1,r8,0
+	andi.	r0,r4,_TIF_NEED_RESCHED
+	bne+	1f
+
+	andi.	r0,r4,_TIF_NEED_RESCHED_LAZY
+	beq+	restore
+	lwz	r8,TI_PREEMPT_LAZY(r9)
+
+	/* Check that preempt_count() == 0 and interrupts are enabled */
+1:	cmpwi	cr1,r8,0
 	ld	r0,SOFTE(r1)
 	cmpdi	r0,0
 	crandc	eq,cr1*4+eq,eq
@@ -610,13 +615,13 @@ resume_kernel:
 	 * sure we are soft-disabled first
 	 */
 	SOFT_DISABLE_INTS(r3,r4)
-1:	bl	.preempt_schedule_irq
+2:	bl	.preempt_schedule_irq
 
 	/* Re-test flags and eventually loop */
 	CURRENT_THREAD_INFO(r9, r1)
 	ld	r4,TI_FLAGS(r9)
-	andi.	r0,r4,_TIF_NEED_RESCHED
-	bne	1b
+	andi.	r0,r4,_TIF_NEED_RESCHED_MASK
+	bne	2b
 #endif /* CONFIG_PREEMPT */
 
 	.globl	fast_exc_return_irq
