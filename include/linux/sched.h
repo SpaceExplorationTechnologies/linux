@@ -2089,6 +2089,7 @@ static inline void sched_autogroup_exit(struct signal_struct *sig) { }
 #ifdef CONFIG_RT_MUTEXES
 extern void task_setprio(struct task_struct *p, int prio);
 extern int rt_mutex_getprio(struct task_struct *p);
+extern int rt_mutex_check_prio(struct task_struct *task, int newprio);
 static inline void rt_mutex_setprio(struct task_struct *p, int prio)
 {
 	task_setprio(p, prio);
@@ -2102,6 +2103,10 @@ static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
 static inline int rt_mutex_getprio(struct task_struct *p)
 {
 	return p->normal_prio;
+}
+static inline int rt_mutex_check_prio(struct task_struct *task, int newprio)
+{
+	return 0;
 }
 # define rt_mutex_adjust_pi(p)		do { } while (0)
 static inline bool tsk_is_pi_blocked(struct task_struct *tsk)
