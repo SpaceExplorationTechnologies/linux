@@ -846,15 +846,21 @@ unsigned pagevec_lookup_tag(struct pagevec *pvec, struct address_space *mapping,
 }
 EXPORT_SYMBOL(pagevec_lookup_tag);
 
+/* Early setup for the local locks */
+static int __init swap_init_locks(void)
+{
+	local_irq_lock_init(rotate_lock);
+	local_irq_lock_init(swap_lock);
+	return 1;
+}
+early_initcall(swap_init_locks);
+
 /*
  * Perform any setup for the swap system
  */
 void __init swap_setup(void)
 {
 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
-
-	local_irq_lock_init(rotate_lock);
-	local_irq_lock_init(swap_lock);
 
 #ifdef CONFIG_SWAP
 	bdi_init(swapper_space.backing_dev_info);
