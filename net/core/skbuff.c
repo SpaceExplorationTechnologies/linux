@@ -1606,7 +1606,7 @@ static void sock_spd_release(struct splice_pipe_desc *spd, unsigned int i)
 
 static struct page *linear_to_page(struct page *page, unsigned int *len,
 				   unsigned int *offset,
-				   struct sk_buff *skb, struct sock *sk)
+				   struct sock *sk)
 {
 	struct page *p = sk->sk_sndmsg_page;
 	unsigned int off;
@@ -1658,14 +1658,14 @@ static bool spd_can_coalesce(const struct splice_pipe_desc *spd,
 static bool spd_fill_page(struct splice_pipe_desc *spd,
 			  struct pipe_inode_info *pipe, struct page *page,
 			  unsigned int *len, unsigned int offset,
-			  struct sk_buff *skb, bool linear,
+			  bool linear,
 			  struct sock *sk)
 {
 	if (unlikely(spd->nr_pages == MAX_SKB_FRAGS))
 		return true;
 
 	if (linear) {
-		page = linear_to_page(page, len, &offset, skb, sk);
+		page = linear_to_page(page, len, &offset, sk);
 		if (!page)
 			return true;
 	}
@@ -1684,13 +1684,11 @@ static bool spd_fill_page(struct splice_pipe_desc *spd,
 
 static bool __splice_segment(struct page *page, unsigned int poff,
 			     unsigned int plen, unsigned int *off,
-			     unsigned int *len, struct sk_buff *skb,
+			     unsigned int *len,
 			     struct splice_pipe_desc *spd, bool linear,
 			     struct sock *sk,
 			     struct pipe_inode_info *pipe)
 {
-	unsigned int flen;
-
 	if (!*len)
 		return true;
 
@@ -1705,12 +1703,16 @@ static bool __splice_segment(struct page *page, unsigned int poff,
 	plen -= *off;
 	*off = 0;
 
-	flen = min(*len, plen);
+	do {
+		unsigned int flen = min(*len, plen);
 
-	if (spd_fill_page(spd, pipe, page, &flen, poff, skb, linear, sk))
-		return true;
-
-	*len -= flen;
+		if (spd_fill_page(spd, pipe, page, &flen, poff,
+				  linear, sk))
+			return true;
+		poff += flen;
+		plen -= flen;
+		*len -= flen;
+	} while (*len && plen);
 
 	return false;
 }
@@ -1733,7 +1735,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
 	if (__splice_segment(virt_to_page(skb->data),
 			     (unsigned long) skb->data & (PAGE_SIZE - 1),
 			     skb_headlen(skb),
-			     offset, len, skb, spd,
+			     offset, len, spd,
 			     skb_head_is_locked(skb),
 			     sk, pipe))
 		return true;
@@ -1746,7 +1748,7 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
 
 		if (__splice_segment(skb_frag_page(f),
 				     f->page_offset, skb_frag_size(f),
-				     offset, len, skb, spd, false, sk, pipe))
+				     offset, len, spd, false, sk, pipe))
 			return true;
 	}
 
