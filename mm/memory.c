@@ -3495,7 +3495,7 @@ void pagefault_disable(void)
 	 */
 	barrier();
 }
-EXPORT_SYMBOL_GPL(pagefault_disable);
+EXPORT_SYMBOL(pagefault_disable);
 
 void pagefault_enable(void)
 {
@@ -3507,7 +3507,7 @@ void pagefault_enable(void)
 	current->pagefault_disabled--;
 	migrate_enable();
 }
-EXPORT_SYMBOL_GPL(pagefault_enable);
+EXPORT_SYMBOL(pagefault_enable);
 #endif
 
 /*
