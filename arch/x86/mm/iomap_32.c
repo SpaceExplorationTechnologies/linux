@@ -56,6 +56,7 @@ EXPORT_SYMBOL_GPL(iomap_free);
 
 void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
 {
+	pte_t pte = pfn_pte(pfn, prot);
 	unsigned long vaddr;
 	int idx, type;
 
@@ -64,7 +65,10 @@ void *kmap_atomic_prot_pfn(unsigned long pfn, pgprot_t prot)
 	type = kmap_atomic_idx_push();
 	idx = type + KM_TYPE_NR * smp_processor_id();
 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
-	set_pte(kmap_pte - idx, pfn_pte(pfn, prot));
+#ifdef CONFIG_PREEMPT_RT_FULL
+	current->kmap_pte[type] = pte;
+#endif
+	set_pte(kmap_pte - idx, pte);
 	arch_flush_lazy_mmu_mode();
 
 	return (void *)vaddr;

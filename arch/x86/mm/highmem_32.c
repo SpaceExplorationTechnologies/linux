@@ -31,6 +31,7 @@ EXPORT_SYMBOL(kunmap);
  */
 void *kmap_atomic_prot(struct page *page, pgprot_t prot)
 {
+	pte_t pte = mk_pte(page, prot);
 	unsigned long vaddr;
 	int idx, type;
 
@@ -44,7 +45,10 @@ void *kmap_atomic_prot(struct page *page, pgprot_t prot)
 	idx = type + KM_TYPE_NR*smp_processor_id();
 	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
 	WARN_ON(!pte_none(*(kmap_pte-idx)));
-	set_pte(kmap_pte-idx, mk_pte(page, prot));
+#ifdef CONFIG_PREEMPT_RT_FULL
+	current->kmap_pte[type] = pte;
+#endif
+	set_pte(kmap_pte-idx, pte);
 	arch_flush_lazy_mmu_mode();
 
 	return (void *)vaddr;
