@@ -198,6 +198,34 @@ start_thread(struct pt_regs *regs, unsigned long new_ip, unsigned long new_sp)
 }
 EXPORT_SYMBOL_GPL(start_thread);
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+static void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p)
+{
+	int i;
+
+	/*
+	 * Clear @prev's kmap_atomic mappings
+	 */
+	for (i = 0; i < prev_p->kmap_idx; i++) {
+		int idx = i + KM_TYPE_NR * smp_processor_id();
+		pte_t *ptep = kmap_pte - idx;
+
+		kpte_clear_flush(ptep, __fix_to_virt(FIX_KMAP_BEGIN + idx));
+	}
+	/*
+	 * Restore @next_p's kmap_atomic mappings
+	 */
+	for (i = 0; i < next_p->kmap_idx; i++) {
+		int idx = i + KM_TYPE_NR * smp_processor_id();
+
+		set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
+	}
+}
+#else
+static inline void
+switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p) { }
+#endif
+
 
 /*
  *	switch_to(x,y) should switch tasks from x to y.
@@ -277,40 +305,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
 		     task_thread_info(next_p)->flags & _TIF_WORK_CTXSW_NEXT))
 		__switch_to_xtra(prev_p, next_p, tss);
 
-#ifdef CONFIG_PREEMPT_RT_FULL
-	/*
-	 * Save @prev's kmap_atomic stack
-	 */
-	prev_p->kmap_idx = __this_cpu_read(__kmap_atomic_idx);
-	if (unlikely(prev_p->kmap_idx)) {
-		int i;
-
-		for (i = 0; i < prev_p->kmap_idx; i++) {
-			int idx = i + KM_TYPE_NR * smp_processor_id();
-
-			pte_t *ptep = kmap_pte - idx;
-			prev_p->kmap_pte[i] = *ptep;
-			kpte_clear_flush(ptep, __fix_to_virt(FIX_KMAP_BEGIN + idx));
-		}
-
-		__this_cpu_write(__kmap_atomic_idx, 0);
-	}
-
-	/*
-	 * Restore @next_p's kmap_atomic stack
-	 */
-	if (unlikely(next_p->kmap_idx)) {
-		int i;
-
-		__this_cpu_write(__kmap_atomic_idx, next_p->kmap_idx);
-
-		for (i = 0; i < next_p->kmap_idx; i++) {
-			int idx = i + KM_TYPE_NR * smp_processor_id();
-
-			set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
-		}
-	}
-#endif
+	switch_kmaps(prev_p, next_p);
 
 	/*
 	 * Leave lazy mode, flushing any hypercalls made here.
