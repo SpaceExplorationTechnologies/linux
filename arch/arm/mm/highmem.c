@@ -97,6 +97,9 @@ void __kunmap_atomic(void *kvaddr)
 
 		if (cache_is_vivt())
 			__cpuc_flush_dcache_area((void *)vaddr, PAGE_SIZE);
+#ifdef CONFIG_PREEMPT_RT_FULL
+		current->kmap_pte[type] = __pte(0);
+#endif
 #ifdef CONFIG_DEBUG_HIGHMEM
 		BUG_ON(vaddr != __fix_to_virt(FIX_KMAP_BEGIN + idx));
 #else
@@ -163,8 +166,9 @@ void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p)
 	for (i = 0; i < next_p->kmap_idx; i++) {
 		int idx = i + KM_TYPE_NR * smp_processor_id();
 
-		set_top_pte(__fix_to_virt(FIX_KMAP_BEGIN + idx),
-			    next_p->kmap_pte[i]);
+		if (!pte_none(next_p->kmap_pte[i]))
+			set_top_pte(__fix_to_virt(FIX_KMAP_BEGIN + idx),
+					next_p->kmap_pte[i]);
 	}
 }
 #endif
