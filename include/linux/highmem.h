@@ -100,7 +100,9 @@ static inline int kmap_atomic_idx_push(void)
 # endif
 	return idx;
 #else
-	return current->kmap_idx++;
+	current->kmap_idx++;
+	BUG_ON(current->kmap_idx > KM_TYPE_NR);
+	return current->kmap_idx - 1;
 #endif
 }
 

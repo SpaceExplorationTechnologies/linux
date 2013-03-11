@@ -114,6 +114,9 @@ iounmap_atomic(void __iomem *kvaddr)
 		 * is a bad idea also, in case the page changes cacheability
 		 * attributes or becomes a protected page in a hypervisor.
 		 */
+#ifdef CONFIG_PREEMPT_RT_FULL
+		current->kmap_pte[type] = __pte(0);
+#endif
 		kpte_clear_flush(kmap_pte-idx, vaddr);
 		kmap_atomic_idx_pop();
 	}

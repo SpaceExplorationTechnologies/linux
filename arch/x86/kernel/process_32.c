@@ -218,7 +218,8 @@ static void switch_kmaps(struct task_struct *prev_p, struct task_struct *next_p)
 	for (i = 0; i < next_p->kmap_idx; i++) {
 		int idx = i + KM_TYPE_NR * smp_processor_id();
 
-		set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
+		if (!pte_none(next_p->kmap_pte[i]))
+			set_pte(kmap_pte - idx, next_p->kmap_pte[i]);
 	}
 }
 #else
