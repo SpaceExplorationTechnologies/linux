@@ -1194,7 +1194,7 @@ static void rcu_gp_kthread_wake(struct rcu_state *rsp)
 	    !ACCESS_ONCE(rsp->gp_flags) ||
 	    !rsp->gp_kthread)
 		return;
-	wake_up(&rsp->gp_wq);
+	swait_wake(&rsp->gp_wq);
 }
 
 /*
@@ -1539,7 +1539,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
 
 		/* Handle grace-period start. */
 		for (;;) {
-			wait_event_interruptible(rsp->gp_wq,
+			swait_event_interruptible(rsp->gp_wq,
 						 rsp->gp_flags &
 						 RCU_GP_FLAG_INIT);
 			if ((rsp->gp_flags & RCU_GP_FLAG_INIT) &&
@@ -1558,7 +1558,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
 		}
 		for (;;) {
 			rsp->jiffies_force_qs = jiffies + j;
-			ret = wait_event_interruptible_timeout(rsp->gp_wq,
+			ret = swait_event_interruptible_timeout(rsp->gp_wq,
 					(rsp->gp_flags & RCU_GP_FLAG_FQS) ||
 					(!ACCESS_ONCE(rnp->qsmask) &&
 					 !rcu_preempt_blocked_readers_cgp(rnp)),
@@ -3365,7 +3365,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
 	}
 
 	rsp->rda = rda;
-	init_waitqueue_head(&rsp->gp_wq);
+	init_swait_head(&rsp->gp_wq);
 	init_irq_work(&rsp->wakeup_work, rsp_wakeup);
 	rnp = rsp->level[rcu_num_lvls - 1];
 	for_each_possible_cpu(i) {
