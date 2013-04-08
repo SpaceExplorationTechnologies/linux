@@ -1319,7 +1319,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
 
 		/* Handle grace-period start. */
 		for (;;) {
-			wait_event_interruptible(rsp->gp_wq,
+			swait_event_interruptible(rsp->gp_wq,
 						 rsp->gp_flags &
 						 RCU_GP_FLAG_INIT);
 			if ((rsp->gp_flags & RCU_GP_FLAG_INIT) &&
@@ -1338,7 +1338,7 @@ static int __noreturn rcu_gp_kthread(void *arg)
 		}
 		for (;;) {
 			rsp->jiffies_force_qs = jiffies + j;
-			ret = wait_event_interruptible_timeout(rsp->gp_wq,
+			ret = swait_event_interruptible_timeout(rsp->gp_wq,
 					(rsp->gp_flags & RCU_GP_FLAG_FQS) ||
 					(!ACCESS_ONCE(rnp->qsmask) &&
 					 !rcu_preempt_blocked_readers_cgp(rnp)),
@@ -1423,7 +1423,7 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
 	local_irq_restore(flags);
 
 	/* Wake up rcu_gp_kthread() to start the grace period. */
-	wake_up(&rsp->gp_wq);
+	swait_wake(&rsp->gp_wq);
 }
 
 /*
@@ -1438,7 +1438,7 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
 {
 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
 	raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+	swait_wake(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
 }
 
 /*
@@ -2003,7 +2003,8 @@ static void force_quiescent_state(struct rcu_state *rsp)
 	}
 	rsp->gp_flags |= RCU_GP_FLAG_FQS;
 	raw_spin_unlock_irqrestore(&rnp_old->lock, flags);
-	wake_up(&rsp->gp_wq);  /* Memory barrier implied by wake_up() path. */
+	/* Memory barrier implied by wake_up() path. */
+	swait_wake(&rsp->gp_wq);
 }
 
 /*
@@ -2999,7 +3000,7 @@ static void __init rcu_init_one(struct rcu_state *rsp,
 	}
 
 	rsp->rda = rda;
-	init_waitqueue_head(&rsp->gp_wq);
+	init_swait_head(&rsp->gp_wq);
 	rnp = rsp->level[rcu_num_lvls - 1];
 	for_each_possible_cpu(i) {
 		while (i > rnp->grphi)
