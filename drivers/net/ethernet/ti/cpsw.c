@@ -1467,8 +1467,12 @@ static int cpsw_probe_dt(struct cpsw_platform_data *data,
 
 	if (of_property_read_u32(node, "active_slave", &prop)) {
 		pr_err("Missing active_slave property in the DT.\n");
-		ret = -EINVAL;
-		goto error_ret;
+		if (of_property_read_u32(node, "cpts_active_slave", &prop)) {
+			ret = -EINVAL;
+			goto error_ret;
+		} else {
+			pr_err("Using old cpts_active_slave as fallback.\n");
+		}
 	}
 	data->active_slave = prop;
 
