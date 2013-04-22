@@ -22,6 +22,7 @@
 		};
 
 		nand@3000000 {
+			chip-delay = <40>;
 			status = "okay";
 
 			partition@0 {
