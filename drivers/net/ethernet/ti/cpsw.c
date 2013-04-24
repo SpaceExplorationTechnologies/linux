@@ -490,7 +490,7 @@ void cpsw_rx_handler(void *token, int len, int status)
 		skb_put(skb, len);
 		cpts_rx_timestamp(priv->cpts, skb);
 		skb->protocol = eth_type_trans(skb, ndev);
-		netif_receive_skb(skb);
+		netif_rx(skb);
 		priv->stats.rx_bytes += len;
 		priv->stats.rx_packets++;
 	} else {
@@ -507,19 +507,24 @@ void cpsw_rx_handler(void *token, int len, int status)
 static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
 {
 	struct cpsw_priv *priv = dev_id;
+	unsigned long flags;
 	u32 rx, tx, rx_thresh;
 
+	spin_lock_irqsave(&priv->lock, flags);
 	rx_thresh = __raw_readl(&priv->wr_regs->rx_thresh_stat);
 	rx = __raw_readl(&priv->wr_regs->rx_stat);
 	tx = __raw_readl(&priv->wr_regs->tx_stat);
-	if (!rx_thresh && !rx && !tx)
+	if (!rx_thresh && !rx && !tx) {
+		spin_unlock_irqrestore(&priv->lock, flags);
 		return IRQ_NONE;
+	}
 
 	cpsw_intr_disable(priv);
 	if (priv->irq_enabled == true) {
 		cpsw_disable_irq(priv);
 		priv->irq_enabled = false;
 	}
+	spin_unlock_irqrestore(&priv->lock, flags);
 
 	if (netif_running(priv->ndev)) {
 		napi_schedule(&priv->napi);
@@ -541,7 +546,9 @@ static int cpsw_poll(struct napi_struct *napi, int budget)
 {
 	struct cpsw_priv	*priv = napi_to_priv(napi);
 	int			num_tx, num_rx;
+	unsigned long		flags;
 
+	spin_lock_irqsave(&priv->lock, flags);
 	num_tx = cpdma_chan_process(priv->txch, 128);
 	if (num_tx)
 		cpdma_ctlr_eoi(priv->dma, CPDMA_EOI_TX);
@@ -559,6 +566,7 @@ static int cpsw_poll(struct napi_struct *napi, int budget)
 			prim_cpsw->irq_enabled = true;
 		}
 	}
+	spin_unlock_irqrestore(&priv->lock, flags);
 
 	if (num_rx || num_tx)
 		cpsw_dbg(priv, intr, "poll %d rx, %d tx pkts\n",
