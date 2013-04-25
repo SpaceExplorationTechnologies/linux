@@ -1036,7 +1036,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
 		&& hrtimer_enqueue_reprogram(timer, new_base)) {
 
 		if (wakeup
-#ifdef CONFIG_PREEMPT_RT_BASE
+#if defined(CONFIG_PREEMPT_RT_BASE) && defined(CONFIG_HIGH_RES_TIMERS)
 		    /*
 		     * Move softirq based timers away from the rbtree in
 		     * case it expired already. Otherwise we would have a
