@@ -770,7 +770,7 @@ static void timekeeping_resume(void)
 		__timekeeping_inject_sleeptime(tk, &ts);
 	}
 	/* re-base the last cycle value */
-	tk->clock->cycle_last = tk->clock->read(tk->clock);
+	tk->cycle_last = tk->clock->cycle_last = tk->clock->read(tk->clock);
 	tk->ntp_error = 0;
 	timekeeping_suspended = 0;
 	timekeeping_update(tk, false);
