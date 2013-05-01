@@ -883,7 +883,7 @@ static void rcu_preempt_process_callbacks(void)
 static void invoke_rcu_callbacks(void)
 {
 	have_rcu_kthread_work = 1;
-	swake_up(&rcu_kthread_wq);
+	swait_wake(&rcu_kthread_wq);
 }
 
 /*
