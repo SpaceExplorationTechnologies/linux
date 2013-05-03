@@ -404,6 +404,9 @@ static void __init pSeries_setup_arch(void)
 		ppc_md.enable_pmcs = pseries_lpar_enable_pmcs;
 	else
 		ppc_md.enable_pmcs = power4_enable_pmcs;
+
+	ppc_md.pcibios_root_bridge_prepare = pseries_root_bridge_prepare;
+
 }
 
 static int __init pSeries_init_panel(void)
