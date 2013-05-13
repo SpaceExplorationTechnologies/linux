@@ -168,6 +168,7 @@
 #define   ASIC_REV_USE_PROD_ID_REG	 0x0f
 #define   ASIC_REV_5784			 0x5784
 #define   ASIC_REV_5761			 0x5761
+#define   ASIC_REV_5762			 0x5762
 #define   ASIC_REV_5785			 0x5785
 #define   ASIC_REV_57780		 0x57780
 #define   ASIC_REV_5717			 0x5717
