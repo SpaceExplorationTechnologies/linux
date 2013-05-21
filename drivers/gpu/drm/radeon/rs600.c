@@ -46,21 +46,61 @@
 void rs600_gpu_init(struct radeon_device *rdev);
 int rs600_mc_wait_for_idle(struct radeon_device *rdev);
 
+static bool avivo_is_in_vblank(struct radeon_device *rdev, int crtc)
+{
+	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc];
+
+	if (RREG32(AVIVO_D1CRTC_STATUS + radeon_crtc->crtc_offset) & AVIVO_D1CRTC_V_BLANK)
+		return true;
+	else
+		return false;
+}
+
+static bool avivo_is_counter_moving(struct radeon_device *rdev, int crtc)
+{
+	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc];
+	u32 pos1, pos2;
+
+	pos1 = RREG32(AVIVO_D1CRTC_STATUS_POSITION + radeon_crtc->crtc_offset);
+	pos2 = RREG32(AVIVO_D1CRTC_STATUS_POSITION + radeon_crtc->crtc_offset);
+
+	if (pos1 != pos2)
+		return true;
+	else
+		return false;
+}
+
+/**
+ * avivo_wait_for_vblank - vblank wait asic callback.
+ *
+ * @rdev: radeon_device pointer
+ * @crtc: crtc to wait for vblank on
+ *
+ * Wait for vblank on the requested crtc (r5xx-r7xx).
+ */
 void avivo_wait_for_vblank(struct radeon_device *rdev, int crtc)
 {
 	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc];
-	int i;
+	unsigned i = 0;
 
-	if (RREG32(AVIVO_D1CRTC_CONTROL + radeon_crtc->crtc_offset) & AVIVO_CRTC_EN) {
-		for (i = 0; i < rdev->usec_timeout; i++) {
-			if (!(RREG32(AVIVO_D1CRTC_STATUS + radeon_crtc->crtc_offset) & AVIVO_D1CRTC_V_BLANK))
+	if (!(RREG32(AVIVO_D1CRTC_CONTROL + radeon_crtc->crtc_offset) & AVIVO_CRTC_EN))
+		return;
+
+	/* depending on when we hit vblank, we may be close to active; if so,
+	 * wait for another frame.
+	 */
+	while (avivo_is_in_vblank(rdev, crtc)) {
+		if (i++ % 100 == 0) {
+			if (!avivo_is_counter_moving(rdev, crtc))
 				break;
 			udelay(1);
 		}
-		for (i = 0; i < rdev->usec_timeout; i++) {
-			if (RREG32(AVIVO_D1CRTC_STATUS + radeon_crtc->crtc_offset) & AVIVO_D1CRTC_V_BLANK)
+	}
+
+	while (!avivo_is_in_vblank(rdev, crtc)) {
+		if (i++ % 100 == 0) {
+			if (!avivo_is_counter_moving(rdev, crtc))
 				break;
-			udelay(1);
 		}
 	}
 }

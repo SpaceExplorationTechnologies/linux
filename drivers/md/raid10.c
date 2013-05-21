@@ -912,6 +912,12 @@ static void flush_pending_writes(struct r10conf *conf)
 			struct bio *next = bio->bi_next;
 			bio->bi_next = NULL;
 			generic_make_request(bio);
+			if (unlikely((bio->bi_rw & REQ_DISCARD) &&
+				     !blk_queue_discard(bdev_get_queue(bio->bi_bdev))))
+				/* Just ignore it */
+				bio_endio(bio, 0);
+			else
+				generic_make_request(bio);
 			bio = next;
 		}
 	} else
