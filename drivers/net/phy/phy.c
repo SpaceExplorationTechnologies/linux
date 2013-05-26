@@ -1152,7 +1152,7 @@ int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
 		adv = phy_eee_to_adv(eee_adv);
 		lp = phy_eee_to_adv(eee_lp);
 		idx = phy_find_setting(phydev->speed, phydev->duplex);
-		if ((lp & adv & settings[idx].setting))
+		if (!(lp & adv & settings[idx].setting))
 			goto eee_exit;
 
 		if (clk_stop_enable) {
