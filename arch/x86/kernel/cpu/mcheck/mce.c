@@ -1649,7 +1649,7 @@ static void __mcheck_cpu_init_timer(void)
 	__this_cpu_write(mce_next_interval, iv);
 	if (!iv)
 		return;
-	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000),
+	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(iv) * 1000ULL),
 			       0, HRTIMER_MODE_REL_PINNED);
 }
 
