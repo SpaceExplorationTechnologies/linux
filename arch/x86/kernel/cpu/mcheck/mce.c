@@ -1139,7 +1139,7 @@ static enum hrtimer_restart mce_start_timer(struct hrtimer *timer)
 		*n = min(*n*2, round_jiffies_relative(check_interval*HZ));
 
 	hrtimer_forward(timer, timer->base->get_time(),
-			ns_to_ktime(jiffies_to_usecs(*n) * 1000));
+			ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL));
 	return HRTIMER_RESTART;
 }
 
@@ -1435,7 +1435,7 @@ static void __mcheck_cpu_init_timer(void)
 	if (!*n)
 		return;
 
-	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000),
+	hrtimer_start_range_ns(t, ns_to_ktime(jiffies_to_usecs(*n) * 1000ULL),
 			       0 , HRTIMER_MODE_REL_PINNED);
 }
 
