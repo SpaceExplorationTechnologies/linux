@@ -1638,8 +1638,11 @@ __acquires(&gcwq->lock)
 		 * it races with cpu hotunplug operation.  Verify
 		 * against GCWQ_DISASSOCIATED.
 		 */
-		if (!(gcwq->flags & GCWQ_DISASSOCIATED))
+		if (!(gcwq->flags & GCWQ_DISASSOCIATED)) {
 			set_cpus_allowed_ptr(task, get_cpu_mask(gcwq->cpu));
+			if (WARN_ON(!(task->flags & PF_THREAD_BOUND)))
+				task->flags |= PF_THREAD_BOUND;
+		}
 
 		spin_lock_irq(&gcwq->lock);
 		if (gcwq->flags & GCWQ_DISASSOCIATED)
