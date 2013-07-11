@@ -42,6 +42,7 @@
 #include <linux/lockdep.h>
 #include <linux/idr.h>
 #include <linux/locallock.h>
+#include <linux/delay.h>
 
 #include "workqueue_sched.h"
 
@@ -1157,7 +1158,7 @@ fail:
 	local_unlock_irqrestore(pendingb_lock, *flags);
 	if (work_is_canceling(work))
 		return -ENOENT;
-	cpu_relax();
+	cpu_chill();
 	return -EAGAIN;
 }
 
