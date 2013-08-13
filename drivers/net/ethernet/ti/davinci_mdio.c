@@ -320,10 +320,8 @@ static int davinci_mdio_probe(struct platform_device *pdev)
 	int ret, addr;
 
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
-	if (!data) {
-		dev_err(dev, "failed to alloc device data\n");
+	if (!data)
 		return -ENOMEM;
-	}
 
 	data->bus = mdiobus_alloc();
 	if (!data->bus) {
@@ -487,6 +485,7 @@ static const struct of_device_id davinci_mdio_of_mtable[] = {
 	{ .compatible = "ti,davinci_mdio", },
 	{ /* sentinel */ },
 };
+MODULE_DEVICE_TABLE(of, davinci_mdio_of_mtable);
 
 static struct platform_driver davinci_mdio_driver = {
 	.driver = {
