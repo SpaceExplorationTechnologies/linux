@@ -1286,7 +1286,7 @@ clean_vid:
 }
 
 static int cpsw_ndo_vlan_rx_add_vid(struct net_device *ndev,
-				    __be16 proto, u16 vid)
+		unsigned short vid)
 {
 	struct cpsw_priv *priv = netdev_priv(ndev);
 
@@ -1298,7 +1298,7 @@ static int cpsw_ndo_vlan_rx_add_vid(struct net_device *ndev,
 }
 
 static int cpsw_ndo_vlan_rx_kill_vid(struct net_device *ndev,
-				     __be16 proto, u16 vid)
+		unsigned short vid)
 {
 	struct cpsw_priv *priv = netdev_priv(ndev);
 	int ret;
