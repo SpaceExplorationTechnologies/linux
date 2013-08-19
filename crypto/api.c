@@ -41,12 +41,6 @@ static int __init crypto_api_init(void)
 }
 core_initcall(crypto_api_init);
 
-static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
-{
-	atomic_inc(&alg->cra_refcnt);
-	return alg;
-}
-
 struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
 {
 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
