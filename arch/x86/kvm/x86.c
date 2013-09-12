@@ -558,8 +558,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
 	if (index != XCR_XFEATURE_ENABLED_MASK)
 		return 1;
 	xcr0 = xcr;
-	if (kvm_x86_ops->get_cpl(vcpu) != 0)
-		return 1;
 	if (!(xcr0 & XSTATE_FP))
 		return 1;
 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
@@ -573,7 +571,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
 
 int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
 {
-	if (__kvm_set_xcr(vcpu, index, xcr)) {
+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
+	    __kvm_set_xcr(vcpu, index, xcr)) {
 		kvm_inject_gp(vcpu, 0);
 		return 1;
 	}
@@ -1417,15 +1416,6 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
 	kernel_ns = 0;
 	host_tsc = 0;
 
-	/* Keep irq disabled to prevent changes to the clock */
-	local_irq_save(flags);
-	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
-	if (unlikely(this_tsc_khz == 0)) {
-		local_irq_restore(flags);
-		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
-		return 1;
-	}
-
 	/*
 	 * If the host uses TSC clock, then passthrough TSC as stable
 	 * to the guest.
@@ -1437,6 +1427,15 @@ static int kvm_guest_time_update(struct kvm_vcpu *v)
 		kernel_ns = ka->master_kernel_ns;
 	}
 	spin_unlock(&ka->pvclock_gtod_sync_lock);
+
+	/* Keep irq disabled to prevent changes to the clock */
+	local_irq_save(flags);
+	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
+	if (unlikely(this_tsc_khz == 0)) {
+		local_irq_restore(flags);
+		kvm_make_request(KVM_REQ_CLOCK_UPDATE, v);
+		return 1;
+	}
 	if (!use_master_clock) {
 		host_tsc = native_read_tsc();
 		kernel_ns = get_kernel_ns();

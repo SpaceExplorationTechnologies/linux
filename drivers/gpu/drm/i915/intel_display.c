@@ -1125,8 +1125,8 @@ static void assert_fdi_tx(struct drm_i915_private *dev_priv,
 	enum transcoder cpu_transcoder = intel_pipe_to_cpu_transcoder(dev_priv,
 								      pipe);
 
-	if (IS_HASWELL(dev_priv->dev)) {
-		/* On Haswell, DDI is used instead of FDI_TX_CTL */
+	if (HAS_DDI(dev_priv->dev)) {
+		/* DDI does not have a specific FDI_TX register */
 		reg = TRANS_DDI_FUNC_CTL(cpu_transcoder);
 		val = I915_READ(reg);
 		cur_state = !!(val & TRANS_DDI_FUNC_ENABLE);
@@ -1170,7 +1170,7 @@ static void assert_fdi_tx_pll_enabled(struct drm_i915_private *dev_priv,
 		return;
 
 	/* On Haswell, DDI ports are responsible for the FDI PLL setup */
-	if (IS_HASWELL(dev_priv->dev))
+	if (HAS_DDI(dev_priv->dev))
 		return;
 
 	reg = FDI_TX_CTL(pipe);
@@ -4042,10 +4042,19 @@ struct fdi_m_n {
 static void
 fdi_reduce_ratio(u32 *num, u32 *den)
 {
-	while (*num > 0xffffff || *den > 0xffffff) {
+	while (*num > DATA_LINK_M_N_MASK ||
+	       *den > DATA_LINK_M_N_MASK) {
 		*num >>= 1;
 		*den >>= 1;
 	}
+}
+
+static void compute_m_n(unsigned int m, unsigned int n,
+			uint32_t *ret_m, uint32_t *ret_n)
+{
+	*ret_n = min_t(unsigned int, roundup_pow_of_two(n), DATA_LINK_N_MAX);
+	*ret_m = div_u64((uint64_t) m * *ret_n, n);
+	fdi_reduce_ratio(ret_m, ret_n);
 }
 
 static void
@@ -4054,14 +4063,12 @@ ironlake_compute_m_n(int bits_per_pixel, int nlanes, int pixel_clock,
 {
 	m_n->tu = 64; /* default size */
 
-	/* BUG_ON(pixel_clock > INT_MAX / 36); */
-	m_n->gmch_m = bits_per_pixel * pixel_clock;
-	m_n->gmch_n = link_clock * nlanes * 8;
-	fdi_reduce_ratio(&m_n->gmch_m, &m_n->gmch_n);
+	compute_m_n(bits_per_pixel * pixel_clock,
+		    link_clock * nlanes * 8,
+		    &m_n->gmch_m, &m_n->gmch_n);
 
-	m_n->link_m = pixel_clock;
-	m_n->link_n = link_clock;
-	fdi_reduce_ratio(&m_n->link_m, &m_n->link_n);
+	compute_m_n(pixel_clock, link_clock,
+		    &m_n->link_m, &m_n->link_n);
 }
 
 static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
@@ -8316,7 +8323,7 @@ static const struct drm_crtc_funcs intel_crtc_funcs = {
 
 static void intel_cpu_pll_init(struct drm_device *dev)
 {
-	if (IS_HASWELL(dev))
+	if (HAS_DDI(dev))
 		intel_ddi_pll_init(dev);
 }
 
@@ -8452,11 +8459,10 @@ static void intel_setup_outputs(struct drm_device *dev)
 		I915_WRITE(PFIT_CONTROL, 0);
 	}
 
-	if (!(IS_HASWELL(dev) &&
-	      (I915_READ(DDI_BUF_CTL(PORT_A)) & DDI_A_4_LANES)))
+	if (!IS_ULT(dev))
 		intel_crt_init(dev);
 
-	if (IS_HASWELL(dev)) {
+	if (HAS_DDI(dev)) {
 		int found;
 
 		/* Haswell uses DDI functions to detect digital outputs */
@@ -8716,7 +8722,7 @@ static void intel_init_display(struct drm_device *dev)
 	struct drm_i915_private *dev_priv = dev->dev_private;
 
 	/* We always want a DPMS function */
-	if (IS_HASWELL(dev)) {
+	if (HAS_DDI(dev)) {
 		dev_priv->display.crtc_mode_set = haswell_crtc_mode_set;
 		dev_priv->display.crtc_enable = haswell_crtc_enable;
 		dev_priv->display.crtc_disable = haswell_crtc_disable;
@@ -8844,6 +8850,17 @@ static void quirk_invert_brightness(struct drm_device *dev)
 	DRM_INFO("applying inverted panel brightness quirk\n");
 }
 
+/*
+ * Some machines (Dell XPS13) suffer broken backlight controls if
+ * BLM_PCH_PWM_ENABLE is set.
+ */
+static void quirk_no_pcm_pwm_enable(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	dev_priv->quirks |= QUIRK_NO_PCH_PWM_ENABLE;
+	DRM_INFO("applying no-PCH_PWM_ENABLE quirk\n");
+}
+
 struct intel_quirk {
 	int device;
 	int subsystem_vendor;
@@ -8913,6 +8930,14 @@ static struct intel_quirk intel_quirks[] = {
 
 	/* Acer/Packard Bell NCL20 */
 	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
+
+	/* Acer Aspire 4736Z */
+	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
+
+	/* Dell XPS13 HD Sandy Bridge */
+	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
+	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
+	{ 0x0166, 0x1028, 0x058b, quirk_no_pcm_pwm_enable },
 };
 
 static void intel_init_quirks(struct drm_device *dev)
@@ -9234,7 +9259,7 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
 	struct intel_encoder *encoder;
 	struct intel_connector *connector;
 
-	if (IS_HASWELL(dev)) {
+	if (HAS_DDI(dev)) {
 		tmp = I915_READ(TRANS_DDI_FUNC_CTL(TRANSCODER_EDP));
 
 		if (tmp & TRANS_DDI_FUNC_ENABLE) {
@@ -9275,7 +9300,7 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
 			      crtc->active ? "enabled" : "disabled");
 	}
 
-	if (IS_HASWELL(dev))
+	if (HAS_DDI(dev))
 		intel_ddi_setup_hw_pll_state(dev);
 
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list,
