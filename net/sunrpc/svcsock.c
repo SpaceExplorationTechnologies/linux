@@ -963,7 +963,10 @@ static void svc_tcp_clear_pages(struct svc_sock *svsk)
 	len = svsk->sk_tcplen - sizeof(rpc_fraghdr);
 	npages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	for (i = 0; i < npages; i++) {
-		BUG_ON(svsk->sk_pages[i] == NULL);
+		if (svsk->sk_pages[i] == NULL) {
+			WARN_ON_ONCE(1);
+			continue;
+		}
 		put_page(svsk->sk_pages[i]);
 		svsk->sk_pages[i] = NULL;
 	}
