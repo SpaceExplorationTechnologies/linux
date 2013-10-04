@@ -1402,6 +1402,20 @@ static const struct iwl_trans_ops trans_ops_pcie = {
 	.set_bits_mask = iwl_trans_pcie_set_bits_mask,
 };
 
+#ifdef CONFIG_PREEMPT_RT_BASE
+static irqreturn_t iwl_rt_irq_handler(int irq, void *dev_id)
+{
+	irqreturn_t ret;
+
+	local_bh_disable();
+	ret = iwl_pcie_isr_ict(irq, dev_id);
+	local_bh_enable();
+	if (ret == IRQ_WAKE_THREAD)
+		ret = iwl_pcie_irq_handler(irq, dev_id);
+	return ret;
+}
+#endif
+
 struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
 				       const struct pci_device_id *ent,
 				       const struct iwl_cfg *cfg)
@@ -1520,9 +1534,14 @@ struct iwl_trans *iwl_trans_pcie_alloc(struct pci_dev *pdev,
 	if (iwl_pcie_alloc_ict(trans))
 		goto out_free_cmd_pool;
 
+#ifdef CONFIG_PREEMPT_RT_BASE
+	err = request_threaded_irq(pdev->irq, NULL, iwl_rt_irq_handler,
+				IRQF_SHARED | IRQF_ONESHOT, DRV_NAME, trans);
+#else
 	err = request_threaded_irq(pdev->irq, iwl_pcie_isr_ict,
 				   iwl_pcie_irq_handler,
 				   IRQF_SHARED, DRV_NAME, trans);
+#endif
 	if (err) {
 		IWL_ERR(trans, "Error allocating IRQ %d\n", pdev->irq);
 		goto out_free_ict;
