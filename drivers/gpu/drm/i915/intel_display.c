@@ -2315,10 +2315,10 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
 		return 0;
 	}
 
-	if(intel_crtc->plane > dev_priv->num_pipe) {
+	if (intel_crtc->plane > INTEL_INFO(dev)->num_pipes) {
 		DRM_ERROR("no plane for crtc: plane %d, num_pipes %d\n",
 				intel_crtc->plane,
-				dev_priv->num_pipe);
+				INTEL_INFO(dev)->num_pipes);
 		return -EINVAL;
 	}
 
@@ -5360,7 +5360,7 @@ static bool ironlake_check_fdi_lanes(struct intel_crtc *intel_crtc)
 		return false;
 	}
 
-	if (dev_priv->num_pipe == 2)
+	if (INTEL_INFO(dev)->num_pipes == 2)
 		return true;
 
 	switch (intel_crtc->pipe) {
@@ -9034,9 +9034,10 @@ void intel_modeset_init(struct drm_device *dev)
 	dev->mode_config.fb_base = dev_priv->mm.gtt_base_addr;
 
 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
-		      dev_priv->num_pipe, dev_priv->num_pipe > 1 ? "s" : "");
+		      INTEL_INFO(dev)->num_pipes,
+		      INTEL_INFO(dev)->num_pipes > 1 ? "s" : "");
 
-	for (i = 0; i < dev_priv->num_pipe; i++) {
+	for (i = 0; i < INTEL_INFO(dev)->num_pipes; i++) {
 		intel_crtc_init(dev, i);
 		ret = intel_plane_init(dev, i);
 		if (ret)
@@ -9090,10 +9091,11 @@ static void intel_enable_pipe_a(struct drm_device *dev)
 static bool
 intel_check_plane_mapping(struct intel_crtc *crtc)
 {
-	struct drm_i915_private *dev_priv = crtc->base.dev->dev_private;
+	struct drm_device *dev = crtc->base.dev;
+	struct drm_i915_private *dev_priv = dev->dev_private;
 	u32 reg, val;
 
-	if (dev_priv->num_pipe == 1)
+	if (INTEL_INFO(dev)->num_pipes == 1)
 		return true;
 
 	reg = DSPCNTR(!crtc->plane);
@@ -9459,6 +9461,9 @@ int intel_modeset_vga_set_state(struct drm_device *dev, bool state)
 #include <linux/seq_file.h>
 
 struct intel_display_error_state {
+
+	int num_transcoders;
+
 	struct intel_cursor_error_state {
 		u32 control;
 		u32 position;
@@ -9467,15 +9472,7 @@ struct intel_display_error_state {
 	} cursor[I915_MAX_PIPES];
 
 	struct intel_pipe_error_state {
-		u32 conf;
 		u32 source;
-
-		u32 htotal;
-		u32 hblank;
-		u32 hsync;
-		u32 vtotal;
-		u32 vblank;
-		u32 vsync;
 	} pipe[I915_MAX_PIPES];
 
 	struct intel_plane_error_state {
@@ -9487,6 +9484,19 @@ struct intel_display_error_state {
 		u32 surface;
 		u32 tile_offset;
 	} plane[I915_MAX_PIPES];
+
+	struct intel_transcoder_error_state {
+		enum transcoder cpu_transcoder;
+
+		u32 conf;
+
+		u32 htotal;
+		u32 hblank;
+		u32 hsync;
+		u32 vtotal;
+		u32 vblank;
+		u32 vsync;
+	} transcoder[4];
 };
 
 struct intel_display_error_state *
@@ -9494,16 +9504,22 @@ intel_display_capture_error_state(struct drm_device *dev)
 {
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	struct intel_display_error_state *error;
-	enum transcoder cpu_transcoder;
+	int transcoders[] = {
+		TRANSCODER_A,
+		TRANSCODER_B,
+		TRANSCODER_C,
+		TRANSCODER_EDP,
+	};
 	int i;
+
+	if (INTEL_INFO(dev)->num_pipes == 0)
+		return NULL;
 
 	error = kmalloc(sizeof(*error), GFP_ATOMIC);
 	if (error == NULL)
 		return NULL;
 
 	for_each_pipe(i) {
-		cpu_transcoder = intel_pipe_to_cpu_transcoder(dev_priv, i);
-
 		error->cursor[i].control = I915_READ(CURCNTR(i));
 		error->cursor[i].position = I915_READ(CURPOS(i));
 		error->cursor[i].base = I915_READ(CURBASE(i));
@@ -9518,14 +9534,25 @@ intel_display_capture_error_state(struct drm_device *dev)
 			error->plane[i].tile_offset = I915_READ(DSPTILEOFF(i));
 		}
 
-		error->pipe[i].conf = I915_READ(PIPECONF(cpu_transcoder));
 		error->pipe[i].source = I915_READ(PIPESRC(i));
-		error->pipe[i].htotal = I915_READ(HTOTAL(cpu_transcoder));
-		error->pipe[i].hblank = I915_READ(HBLANK(cpu_transcoder));
-		error->pipe[i].hsync = I915_READ(HSYNC(cpu_transcoder));
-		error->pipe[i].vtotal = I915_READ(VTOTAL(cpu_transcoder));
-		error->pipe[i].vblank = I915_READ(VBLANK(cpu_transcoder));
-		error->pipe[i].vsync = I915_READ(VSYNC(cpu_transcoder));
+	}
+
+	error->num_transcoders = INTEL_INFO(dev)->num_pipes;
+	if (HAS_DDI(dev_priv->dev))
+		error->num_transcoders++; /* Account for eDP. */
+
+	for (i = 0; i < error->num_transcoders; i++) {
+		enum transcoder cpu_transcoder = transcoders[i];
+
+		error->transcoder[i].cpu_transcoder = cpu_transcoder;
+
+		error->transcoder[i].conf = I915_READ(PIPECONF(cpu_transcoder));
+		error->transcoder[i].htotal = I915_READ(HTOTAL(cpu_transcoder));
+		error->transcoder[i].hblank = I915_READ(HBLANK(cpu_transcoder));
+		error->transcoder[i].hsync = I915_READ(HSYNC(cpu_transcoder));
+		error->transcoder[i].vtotal = I915_READ(VTOTAL(cpu_transcoder));
+		error->transcoder[i].vblank = I915_READ(VBLANK(cpu_transcoder));
+		error->transcoder[i].vsync = I915_READ(VSYNC(cpu_transcoder));
 	}
 
 	return error;
@@ -9536,20 +9563,15 @@ intel_display_print_error_state(struct seq_file *m,
 				struct drm_device *dev,
 				struct intel_display_error_state *error)
 {
-	drm_i915_private_t *dev_priv = dev->dev_private;
 	int i;
 
-	seq_printf(m, "Num Pipes: %d\n", dev_priv->num_pipe);
+	if (!error)
+		return;
+
+	seq_printf(m, "Num Pipes: %d\n", INTEL_INFO(dev)->num_pipes);
 	for_each_pipe(i) {
 		seq_printf(m, "Pipe [%d]:\n", i);
-		seq_printf(m, "  CONF: %08x\n", error->pipe[i].conf);
 		seq_printf(m, "  SRC: %08x\n", error->pipe[i].source);
-		seq_printf(m, "  HTOTAL: %08x\n", error->pipe[i].htotal);
-		seq_printf(m, "  HBLANK: %08x\n", error->pipe[i].hblank);
-		seq_printf(m, "  HSYNC: %08x\n", error->pipe[i].hsync);
-		seq_printf(m, "  VTOTAL: %08x\n", error->pipe[i].vtotal);
-		seq_printf(m, "  VBLANK: %08x\n", error->pipe[i].vblank);
-		seq_printf(m, "  VSYNC: %08x\n", error->pipe[i].vsync);
 
 		seq_printf(m, "Plane [%d]:\n", i);
 		seq_printf(m, "  CNTR: %08x\n", error->plane[i].control);
@@ -9566,6 +9588,18 @@ intel_display_print_error_state(struct seq_file *m,
 		seq_printf(m, "  CNTR: %08x\n", error->cursor[i].control);
 		seq_printf(m, "  POS: %08x\n", error->cursor[i].position);
 		seq_printf(m, "  BASE: %08x\n", error->cursor[i].base);
+	}
+
+	for (i = 0; i < error->num_transcoders; i++) {
+		seq_printf(m, "  CPU transcoder: %c\n",
+			   transcoder_name(error->transcoder[i].cpu_transcoder));
+		seq_printf(m, "  CONF: %08x\n", error->transcoder[i].conf);
+		seq_printf(m, "  HTOTAL: %08x\n", error->transcoder[i].htotal);
+		seq_printf(m, "  HBLANK: %08x\n", error->transcoder[i].hblank);
+		seq_printf(m, "  HSYNC: %08x\n", error->transcoder[i].hsync);
+		seq_printf(m, "  VTOTAL: %08x\n", error->transcoder[i].vtotal);
+		seq_printf(m, "  VBLANK: %08x\n", error->transcoder[i].vblank);
+		seq_printf(m, "  VSYNC: %08x\n", error->transcoder[i].vsync);
 	}
 }
 #endif
