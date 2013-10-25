@@ -57,6 +57,7 @@ config CMPXCHG_LOCKREF
 	depends on !GENERIC_LOCKBREAK
 	depends on !DEBUG_SPINLOCK
 	depends on !DEBUG_LOCK_ALLOC
+	depends on !PREEMPT_RT_BASE
 
 config CRC_CCITT
 	tristate "CRC-CCITT functions"
