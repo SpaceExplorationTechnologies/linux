@@ -1677,9 +1677,9 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
 	 * and no one may trigger the above deadlock situation when
 	 * running complete() in tasklet.
 	 */
-	local_irq_save(flags);
+	local_irq_save_nort(flags);
 	urb->complete(urb);
-	local_irq_restore(flags);
+	local_irq_restore_nort(flags);
 
 	atomic_dec(&urb->use_count);
 	if (unlikely(atomic_read(&urb->reject)))
