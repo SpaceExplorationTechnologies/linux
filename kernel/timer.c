@@ -1336,7 +1336,7 @@ unsigned long get_next_timer_interrupt(unsigned long now)
 		if (time_before_eq(base->next_timer, base->timer_jiffies))
 			base->next_timer = __next_timer_interrupt(base);
 		expires = base->next_timer;
-		rt_spin_unlock(&base->lock);
+		rt_spin_unlock_after_trylock_in_irq(&base->lock);
 	} else {
 		expires = now + 1;
 	}
