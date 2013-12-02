@@ -236,8 +236,7 @@ repeat:
 		 * Take the lock and let the writer proceed (i.e. evtl
 		 * boost it), otherwise we could loop here forever.
 		 */
-		spin_lock(&sl->lock);
-		spin_unlock(&sl->lock);
+		spin_unlock_wait(&sl->lock);
 		goto repeat;
 	}
 	return ret;
