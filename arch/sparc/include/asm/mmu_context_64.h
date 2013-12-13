@@ -77,7 +77,7 @@ static inline void switch_mm(struct mm_struct *old_mm, struct mm_struct *mm, str
 	if (unlikely(mm == &init_mm))
 		return;
 
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 	ctx_valid = CTX_VALID(mm->context);
 	if (!ctx_valid)
 		get_new_mmu_context(mm);
@@ -125,7 +125,7 @@ static inline void switch_mm(struct mm_struct *old_mm, struct mm_struct *mm, str
 		__flush_tlb_mm(CTX_HWBITS(mm->context),
 			       SECONDARY_CONTEXT);
 	}
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 }
 
 #define deactivate_mm(tsk,mm)	do { } while (0)
@@ -136,7 +136,7 @@ static inline void activate_mm(struct mm_struct *active_mm, struct mm_struct *mm
 	unsigned long flags;
 	int cpu;
 
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 	if (!CTX_VALID(mm->context))
 		get_new_mmu_context(mm);
 	cpu = smp_processor_id();
@@ -146,7 +146,7 @@ static inline void activate_mm(struct mm_struct *active_mm, struct mm_struct *mm
 	load_secondary_context(mm);
 	__flush_tlb_mm(CTX_HWBITS(mm->context), SECONDARY_CONTEXT);
 	tsb_context_switch(mm);
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 }
 
 #endif /* !(__ASSEMBLY__) */

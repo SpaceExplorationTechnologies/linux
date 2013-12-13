@@ -73,7 +73,7 @@ void flush_tsb_user(struct tlb_batch *tb)
 	struct mm_struct *mm = tb->mm;
 	unsigned long nentries, base, flags;
 
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 
 	base = (unsigned long) mm->context.tsb_block[MM_TSB_BASE].tsb;
 	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
@@ -90,14 +90,14 @@ void flush_tsb_user(struct tlb_batch *tb)
 		__flush_tsb_one(tb, HPAGE_SHIFT, base, nentries);
 	}
 #endif
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 }
 
 void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr)
 {
 	unsigned long nentries, base, flags;
 
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 
 	base = (unsigned long) mm->context.tsb_block[MM_TSB_BASE].tsb;
 	nentries = mm->context.tsb_block[MM_TSB_BASE].tsb_nentries;
@@ -114,7 +114,7 @@ void flush_tsb_user_page(struct mm_struct *mm, unsigned long vaddr)
 		__flush_tsb_one_entry(base, vaddr, HPAGE_SHIFT, nentries);
 	}
 #endif
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 }
 
 #define HV_PGSZ_IDX_BASE	HV_PGSZ_IDX_8K
@@ -392,7 +392,7 @@ retry_tsb_alloc:
 	 * the lock and ask all other cpus running this address space
 	 * to run tsb_context_switch() to see the new TSB table.
 	 */
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 
 	old_tsb = mm->context.tsb_block[tsb_index].tsb;
 	old_cache_index =
@@ -407,7 +407,7 @@ retry_tsb_alloc:
 	 */
 	if (unlikely(old_tsb &&
 		     (rss < mm->context.tsb_block[tsb_index].tsb_rss_limit))) {
-		spin_unlock_irqrestore(&mm->context.lock, flags);
+		raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 
 		kmem_cache_free(tsb_caches[new_cache_index], new_tsb);
 		return;
@@ -433,7 +433,7 @@ retry_tsb_alloc:
 	mm->context.tsb_block[tsb_index].tsb = new_tsb;
 	setup_tsb_params(mm, tsb_index, new_size);
 
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 
 	/* If old_tsb is NULL, we're being invoked for the first time
 	 * from init_new_context().
@@ -459,7 +459,7 @@ int init_new_context(struct task_struct *tsk, struct mm_struct *mm)
 #endif
 	unsigned int i;
 
-	spin_lock_init(&mm->context.lock);
+	raw_spin_lock_init(&mm->context.lock);
 
 	mm->context.sparc64_ctx_val = 0UL;
 
