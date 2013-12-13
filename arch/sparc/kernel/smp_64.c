@@ -980,12 +980,12 @@ void __irq_entry smp_new_mmu_context_version_client(int irq, struct pt_regs *reg
 	if (unlikely(!mm || (mm == &init_mm)))
 		return;
 
-	spin_lock_irqsave(&mm->context.lock, flags);
+	raw_spin_lock_irqsave(&mm->context.lock, flags);
 
 	if (unlikely(!CTX_VALID(mm->context)))
 		get_new_mmu_context(mm);
 
-	spin_unlock_irqrestore(&mm->context.lock, flags);
+	raw_spin_unlock_irqrestore(&mm->context.lock, flags);
 
 	load_secondary_context(mm);
 	__flush_tlb_mm(CTX_HWBITS(mm->context),
