@@ -545,12 +545,12 @@ void destroy_context(struct mm_struct *mm)
 	for (i = 0; i < MM_NUM_TSBS; i++)
 		tsb_destroy_one(&mm->context.tsb_block[i]);
 
-	spin_lock_irqsave(&ctx_alloc_lock, flags);
+	raw_spin_lock_irqsave(&ctx_alloc_lock, flags);
 
 	if (CTX_VALID(mm->context)) {
 		unsigned long nr = CTX_NRBITS(mm->context);
 		mmu_context_bmap[nr>>6] &= ~(1UL << (nr & 63));
 	}
 
-	spin_unlock_irqrestore(&ctx_alloc_lock, flags);
+	raw_spin_unlock_irqrestore(&ctx_alloc_lock, flags);
 }
