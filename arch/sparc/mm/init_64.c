@@ -661,7 +661,7 @@ void __flush_dcache_range(unsigned long start, unsigned long end)
 EXPORT_SYMBOL(__flush_dcache_range);
 
 /* get_new_mmu_context() uses "cache + 1".  */
-DEFINE_SPINLOCK(ctx_alloc_lock);
+DEFINE_RAW_SPINLOCK(ctx_alloc_lock);
 unsigned long tlb_context_cache = CTX_FIRST_VERSION - 1;
 #define MAX_CTX_NR	(1UL << CTX_NR_BITS)
 #define CTX_BMAP_SLOTS	BITS_TO_LONGS(MAX_CTX_NR)
@@ -683,7 +683,7 @@ void get_new_mmu_context(struct mm_struct *mm)
 	unsigned long orig_pgsz_bits;
 	int new_version;
 
-	spin_lock(&ctx_alloc_lock);
+	raw_spin_lock(&ctx_alloc_lock);
 	orig_pgsz_bits = (mm->context.sparc64_ctx_val & CTX_PGSZ_MASK);
 	ctx = (tlb_context_cache + 1) & CTX_NR_MASK;
 	new_ctx = find_next_zero_bit(mmu_context_bmap, 1 << CTX_NR_BITS, ctx);
@@ -719,7 +719,7 @@ void get_new_mmu_context(struct mm_struct *mm)
 out:
 	tlb_context_cache = new_ctx;
 	mm->context.sparc64_ctx_val = new_ctx | orig_pgsz_bits;
-	spin_unlock(&ctx_alloc_lock);
+	raw_spin_unlock(&ctx_alloc_lock);
 
 	if (unlikely(new_version))
 		smp_new_mmu_context_version();
@@ -2721,7 +2721,7 @@ void hugetlb_setup(struct pt_regs *regs)
 	if (tlb_type == cheetah_plus) {
 		unsigned long ctx;
 
-		spin_lock(&ctx_alloc_lock);
+		raw_spin_lock(&ctx_alloc_lock);
 		ctx = mm->context.sparc64_ctx_val;
 		ctx &= ~CTX_PGSZ_MASK;
 		ctx |= CTX_PGSZ_BASE << CTX_PGSZ0_SHIFT;
@@ -2742,7 +2742,7 @@ void hugetlb_setup(struct pt_regs *regs)
 			mm->context.sparc64_ctx_val = ctx;
 			on_each_cpu(context_reload, mm, 0);
 		}
-		spin_unlock(&ctx_alloc_lock);
+		raw_spin_unlock(&ctx_alloc_lock);
 	}
 }
 #endif
