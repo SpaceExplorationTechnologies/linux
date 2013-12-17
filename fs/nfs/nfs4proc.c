@@ -1095,7 +1095,8 @@ _nfs4_opendata_reclaim_to_nfs4_state(struct nfs4_opendata *data)
 	struct nfs4_state *state = data->state;
 	int ret;
 
-	if (!data->rpc_done) {
+	/* allow cached opens (!rpc_done && !rpc_status) */
+	if (!data->rpc_done && data->rpc_status) {
 		ret = data->rpc_status;
 		goto err;
 	}
@@ -4326,6 +4327,7 @@ static int _nfs4_proc_getlk(struct nfs4_state *state, int cmd, struct file_lock 
 			status = 0;
 	}
 	request->fl_ops->fl_release_private(request);
+	request->fl_ops = NULL;
 out:
 	return status;
 }
