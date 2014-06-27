@@ -319,6 +319,31 @@ static inline int __next_wq_cpu(int cpu, const struct cpumask *mask,
 	     (cpu) < WORK_CPU_NONE;					\
 	     (cpu) = __next_wq_cpu((cpu), cpu_possible_mask, (wq)))
 
+#ifdef CONFIG_PREEMPT_RT_BASE
+static inline void rt_lock_idle_list(struct global_cwq *gcwq)
+{
+	preempt_disable();
+}
+static inline void rt_unlock_idle_list(struct global_cwq *gcwq)
+{
+	preempt_enable();
+}
+static inline void sched_lock_idle_list(struct global_cwq *gcwq) { }
+static inline void sched_unlock_idle_list(struct global_cwq *gcwq) { }
+#else
+static inline void rt_lock_idle_list(struct global_cwq *gcwq) { }
+static inline void rt_unlock_idle_list(struct global_cwq *gcwq) { }
+static inline void sched_lock_idle_list(struct global_cwq *gcwq)
+{
+	spin_lock_irq(&gcwq->lock);
+}
+static inline void sched_unlock_idle_list(struct global_cwq *gcwq)
+{
+	spin_unlock_irq(&gcwq->lock);
+}
+#endif
+
+
 #ifdef CONFIG_DEBUG_OBJECTS_WORK
 
 static struct debug_obj_descr work_debug_descr;
@@ -650,10 +675,16 @@ static struct worker *first_worker(struct global_cwq *gcwq)
  */
 static void wake_up_worker(struct global_cwq *gcwq)
 {
-	struct worker *worker = first_worker(gcwq);
+	struct worker *worker;
+
+	rt_lock_idle_list(gcwq);
+
+	worker = first_worker(gcwq);
 
 	if (likely(worker))
 		wake_up_process(worker->task);
+
+	rt_unlock_idle_list(gcwq);
 }
 
 /**
@@ -696,7 +727,6 @@ void wq_worker_sleeping(struct task_struct *task)
 
 	cpu = smp_processor_id();
 	gcwq = get_gcwq(cpu);
-	spin_lock_irq(&gcwq->lock);
 	/*
 	 * The counterpart of the following dec_and_test, implied mb,
 	 * worklist not empty test sequence is in insert_work().
@@ -704,11 +734,10 @@ void wq_worker_sleeping(struct task_struct *task)
 	 */
 	if (atomic_dec_and_test(get_gcwq_nr_running(cpu)) &&
 	    !list_empty(&gcwq->worklist)) {
-		worker = first_worker(gcwq);
-		if (worker)
-			wake_up_process(worker->task);
+		sched_lock_idle_list(gcwq);
+		wake_up_worker(gcwq);
+		sched_unlock_idle_list(gcwq);
 	}
-	spin_unlock_irq(&gcwq->lock);
 }
 
 /**
