@@ -892,8 +892,8 @@ static int irq_thread(void *data)
 
 			raw_spin_unlock_irq(&desc->lock);
 			action_ret = handler_fn(desc, action);
-			if (!noirqdebug)
-				note_interrupt(action->irq, desc, action_ret);
+			if (action_ret == IRQ_HANDLED)
+				atomic_inc(&desc->threads_handled);
 #ifdef CONFIG_PREEMPT_RT_FULL
 			migrate_disable();
 			add_interrupt_randomness(action->irq, 0,
