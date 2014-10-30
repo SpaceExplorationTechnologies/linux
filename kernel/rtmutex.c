@@ -699,7 +699,6 @@ static void wakeup_next_waiter(struct rt_mutex *lock)
 	 * acquire it in order to dequeue the waiter.
 	 */
 	rt_mutex_wake_waiter(waiter);
-	wake_up_process(waiter->task);
 }
 
 /*
