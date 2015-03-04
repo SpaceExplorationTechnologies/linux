@@ -381,7 +381,7 @@ COMPAT_SYSCALL_DEFINE6(ipc, u32, call, int, first, int, second,
 			uptr = compat_ptr(ipck.msgp);
 			fifth = ipck.msgtyp;
 		}
-		return do_msgrcv(first, uptr, second, fifth, third,
+		return do_msgrcv(first, uptr, second, (s32)fifth, third,
 				 compat_do_msg_fill);
 	}
 	case MSGGET:
@@ -430,9 +430,9 @@ COMPAT_SYSCALL_DEFINE4(msgsnd, int, msqid, compat_uptr_t, msgp,
 }
 
 COMPAT_SYSCALL_DEFINE5(msgrcv, int, msqid, compat_uptr_t, msgp,
-		       compat_ssize_t, msgsz, long, msgtyp, int, msgflg)
+		       compat_ssize_t, msgsz, compat_long_t, msgtyp, int, msgflg)
 {
-	return do_msgrcv(msqid, compat_ptr(msgp), (ssize_t)msgsz, msgtyp,
+	return do_msgrcv(msqid, compat_ptr(msgp), (ssize_t)msgsz, (long)msgtyp,
 			 msgflg, compat_do_msg_fill);
 }
 

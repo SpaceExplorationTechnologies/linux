@@ -1637,10 +1637,12 @@ call_bind_status(struct rpc_task *task)
 		return;
 	case -ECONNREFUSED:		/* connection problems */
 	case -ECONNRESET:
+	case -ECONNABORTED:
 	case -ENOTCONN:
 	case -EHOSTDOWN:
 	case -EHOSTUNREACH:
 	case -ENETUNREACH:
+	case -ENOBUFS:
 	case -EPIPE:
 		dprintk("RPC: %5u remote rpcbind unreachable: %d\n",
 				task->tk_pid, task->tk_status);
@@ -1699,20 +1701,25 @@ call_connect_status(struct rpc_task *task)
 	dprint_status(task);
 
 	trace_rpc_connect_status(task, status);
+	task->tk_status = 0;
 	switch (status) {
-		/* if soft mounted, test if we've timed out */
-	case -ETIMEDOUT:
-		task->tk_action = call_timeout;
-		return;
 	case -ECONNREFUSED:
 	case -ECONNRESET:
+	case -ECONNABORTED:
 	case -ENETUNREACH:
+	case -EHOSTUNREACH:
+	case -ENOBUFS:
+	case -EPIPE:
 		if (RPC_IS_SOFTCONN(task))
 			break;
 		/* retry with existing socket, after a delay */
-	case 0:
+		rpc_delay(task, 3*HZ);
 	case -EAGAIN:
-		task->tk_status = 0;
+		/* Check for timeouts before looping back to call_bind */
+	case -ETIMEDOUT:
+		task->tk_action = call_timeout;
+		return;
+	case 0:
 		clnt->cl_stats->netreconn++;
 		task->tk_action = call_transmit;
 		return;
@@ -1804,7 +1811,9 @@ call_transmit_status(struct rpc_task *task)
 			break;
 		}
 	case -ECONNRESET:
+	case -ECONNABORTED:
 	case -ENOTCONN:
+	case -ENOBUFS:
 	case -EPIPE:
 		rpc_task_force_reencode(task);
 	}
@@ -1913,9 +1922,11 @@ call_status(struct rpc_task *task)
 			xprt_conditional_disconnect(req->rq_xprt,
 					req->rq_connect_cookie);
 		break;
-	case -ECONNRESET:
 	case -ECONNREFUSED:
+	case -ECONNRESET:
+	case -ECONNABORTED:
 		rpc_force_rebind(clnt);
+	case -ENOBUFS:
 		rpc_delay(task, 3*HZ);
 	case -EPIPE:
 	case -ENOTCONN:
