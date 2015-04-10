@@ -18,7 +18,6 @@ void smp_irq_work_interrupt(struct pt_regs *regs)
 	irq_exit();
 }
 
-#ifndef CONFIG_PREEMPT_RT_FULL
 void arch_irq_work_raise(void)
 {
 #ifdef CONFIG_X86_LOCAL_APIC
@@ -29,4 +28,3 @@ void arch_irq_work_raise(void)
 	apic_wait_icr_idle();
 #endif
 }
-#endif
