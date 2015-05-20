@@ -38,6 +38,13 @@ void kvm_inject_undefined(struct kvm_vcpu *vcpu);
 void kvm_inject_dabt(struct kvm_vcpu *vcpu, unsigned long addr);
 void kvm_inject_pabt(struct kvm_vcpu *vcpu, unsigned long addr);
 
+static inline void vcpu_reset_hcr(struct kvm_vcpu *vcpu)
+{
+	vcpu->arch.hcr_el2 = HCR_GUEST_FLAGS;
+	if (test_bit(KVM_ARM_VCPU_EL1_32BIT, vcpu->arch.features))
+		vcpu->arch.hcr_el2 &= ~HCR_RW;
+}
+
 static inline unsigned long *vcpu_pc(const struct kvm_vcpu *vcpu)
 {
 	return (unsigned long *)&vcpu_gp_regs(vcpu)->regs.pc;
@@ -175,6 +182,11 @@ static inline bool kvm_vcpu_trap_is_iabt(const struct kvm_vcpu *vcpu)
 static inline u8 kvm_vcpu_trap_get_fault(const struct kvm_vcpu *vcpu)
 {
 	return kvm_vcpu_get_hsr(vcpu) & ESR_EL2_FSC_TYPE;
+}
+
+static inline unsigned long kvm_vcpu_get_mpidr(struct kvm_vcpu *vcpu)
+{
+	return vcpu_sys_reg(vcpu, MPIDR_EL1);
 }
 
 #endif /* __ARM64_KVM_EMULATE_H__ */

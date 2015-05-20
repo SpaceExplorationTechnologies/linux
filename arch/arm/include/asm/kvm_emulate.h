@@ -33,6 +33,11 @@ void kvm_inject_undefined(struct kvm_vcpu *vcpu);
 void kvm_inject_dabt(struct kvm_vcpu *vcpu, unsigned long addr);
 void kvm_inject_pabt(struct kvm_vcpu *vcpu, unsigned long addr);
 
+static inline void vcpu_reset_hcr(struct kvm_vcpu *vcpu)
+{
+	vcpu->arch.hcr = HCR_GUEST_MASK;
+}
+
 static inline bool vcpu_mode_is_32bit(struct kvm_vcpu *vcpu)
 {
 	return 1;
@@ -155,6 +160,11 @@ static inline u8 kvm_vcpu_trap_get_fault(struct kvm_vcpu *vcpu)
 static inline u32 kvm_vcpu_hvc_get_imm(struct kvm_vcpu *vcpu)
 {
 	return kvm_vcpu_get_hsr(vcpu) & HSR_HVC_IMM_MASK;
+}
+
+static inline unsigned long kvm_vcpu_get_mpidr(struct kvm_vcpu *vcpu)
+{
+	return vcpu->arch.cp15[c0_MPIDR];
 }
 
 #endif /* __ARM_KVM_EMULATE_H__ */

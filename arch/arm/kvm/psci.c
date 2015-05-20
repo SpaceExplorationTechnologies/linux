@@ -18,6 +18,7 @@
 #include <linux/kvm_host.h>
 #include <linux/wait.h>
 
+#include <asm/cputype.h>
 #include <asm/kvm_emulate.h>
 #include <asm/kvm_psci.h>
 
@@ -34,25 +35,34 @@ static void kvm_psci_vcpu_off(struct kvm_vcpu *vcpu)
 static unsigned long kvm_psci_vcpu_on(struct kvm_vcpu *source_vcpu)
 {
 	struct kvm *kvm = source_vcpu->kvm;
-	struct kvm_vcpu *vcpu;
+	struct kvm_vcpu *vcpu = NULL, *tmp;
 	struct swait_head *wq;
 	unsigned long cpu_id;
+	unsigned long mpidr;
 	phys_addr_t target_pc;
+	int i;
 
 	cpu_id = *vcpu_reg(source_vcpu, 1);
 	if (vcpu_mode_is_32bit(source_vcpu))
 		cpu_id &= ~((u32) 0);
 
-	if (cpu_id >= atomic_read(&kvm->online_vcpus))
+	kvm_for_each_vcpu(i, tmp, kvm) {
+		mpidr = kvm_vcpu_get_mpidr(tmp);
+		if ((mpidr & MPIDR_HWID_BITMASK)
+		     == (cpu_id & MPIDR_HWID_BITMASK)) {
+			vcpu = tmp;
+			break;
+		}
+	}
+
+	/*
+	 * Make sure the caller requested a valid CPU and that the CPU is
+	 * turned off.
+	 */
+	if (!vcpu || !vcpu->arch.pause)
 		return KVM_PSCI_RET_INVAL;
 
 	target_pc = *vcpu_reg(source_vcpu, 2);
-
-	vcpu = kvm_get_vcpu(kvm, cpu_id);
-
-	wq = kvm_arch_vcpu_wq(vcpu);
-	if (!waitqueue_active(wq))
-		return KVM_PSCI_RET_INVAL;
 
 	kvm_reset_vcpu(vcpu);
 
@@ -66,6 +76,7 @@ static unsigned long kvm_psci_vcpu_on(struct kvm_vcpu *source_vcpu)
 	vcpu->arch.pause = false;
 	smp_mb();		/* Make sure the above is visible */
 
+	wq = kvm_arch_vcpu_wq(vcpu);
 	swait_wake_interruptible(wq);
 
 	return KVM_PSCI_RET_SUCCESS;

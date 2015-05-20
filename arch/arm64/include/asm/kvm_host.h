@@ -42,7 +42,7 @@
 #define KVM_PAGES_PER_HPAGE(x)	(1UL<<31)
 
 struct kvm_vcpu;
-int kvm_target_cpu(void);
+int __attribute_const__ kvm_target_cpu(void);
 int kvm_reset_vcpu(struct kvm_vcpu *vcpu);
 int kvm_arch_dev_ioctl_check_extension(long ext);
 
@@ -176,7 +176,7 @@ static inline int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
 }
 
 struct kvm_vcpu *kvm_arm_get_running_vcpu(void);
-struct kvm_vcpu __percpu **kvm_get_running_vcpus(void);
+struct kvm_vcpu * __percpu *kvm_get_running_vcpus(void);
 
 u64 kvm_call_hyp(void *hypfn, ...);
 

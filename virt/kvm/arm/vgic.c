@@ -543,11 +543,10 @@ static bool handle_mmio_cfg_reg(struct kvm_vcpu *vcpu,
 	u32 val;
 	u32 *reg;
 
-	offset >>= 1;
 	reg = vgic_bitmap_get_reg(&vcpu->kvm->arch.vgic.irq_cfg,
-				  vcpu->vcpu_id, offset);
+				  vcpu->vcpu_id, offset >> 1);
 
-	if (offset & 2)
+	if (offset & 4)
 		val = *reg >> 16;
 	else
 		val = *reg & 0xffff;
@@ -556,13 +555,13 @@ static bool handle_mmio_cfg_reg(struct kvm_vcpu *vcpu,
 	vgic_reg_access(mmio, &val, offset,
 			ACCESS_READ_VALUE | ACCESS_WRITE_VALUE);
 	if (mmio->is_write) {
-		if (offset < 4) {
+		if (offset < 8) {
 			*reg = ~0U; /* Force PPIs/SGIs to 1 */
 			return false;
 		}
 
 		val = vgic_cfg_compress(val);
-		if (offset & 2) {
+		if (offset & 4) {
 			*reg &= 0xffff;
 			*reg |= val << 16;
 		} else {
@@ -882,6 +881,7 @@ static bool vgic_queue_irq(struct kvm_vcpu *vcpu, u8 sgi_source_id, int irq)
 			  lr, irq, vgic_cpu->vgic_lr[lr]);
 		BUG_ON(!test_bit(lr, vgic_cpu->lr_used));
 		vgic_cpu->vgic_lr[lr] |= GICH_LR_PENDING_BIT;
+		__clear_bit(lr, (unsigned long *)vgic_cpu->vgic_elrsr);
 		return true;
 	}
 
@@ -895,6 +895,7 @@ static bool vgic_queue_irq(struct kvm_vcpu *vcpu, u8 sgi_source_id, int irq)
 	vgic_cpu->vgic_lr[lr] = MK_LR_PEND(sgi_source_id, irq);
 	vgic_cpu->vgic_irq_lr_map[irq] = lr;
 	set_bit(lr, vgic_cpu->lr_used);
+	__clear_bit(lr, (unsigned long *)vgic_cpu->vgic_elrsr);
 
 	if (!vgic_irq_is_edge(vcpu, irq))
 		vgic_cpu->vgic_lr[lr] |= GICH_LR_EOI;
@@ -1048,6 +1049,14 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
 
 	if (vgic_cpu->vgic_misr & GICH_MISR_U)
 		vgic_cpu->vgic_hcr &= ~GICH_HCR_UIE;
+
+	/*
+	 * In the next iterations of the vcpu loop, if we sync the vgic state
+	 * after flushing it, but before entering the guest (this happens for
+	 * pending signals and vmid rollovers), then make sure we don't pick
+	 * up any old maintenance interrupts here.
+	 */
+	memset(vgic_cpu->vgic_eisr, 0, sizeof(vgic_cpu->vgic_eisr[0]) * 2);
 
 	return level_pending;
 }
@@ -1227,7 +1236,8 @@ out:
 int kvm_vgic_inject_irq(struct kvm *kvm, int cpuid, unsigned int irq_num,
 			bool level)
 {
-	if (vgic_update_irq_state(kvm, cpuid, irq_num, level))
+	if (likely(vgic_initialized(kvm)) &&
+	    vgic_update_irq_state(kvm, cpuid, irq_num, level))
 		vgic_kick_vcpus(kvm);
 
 	return 0;
@@ -1244,14 +1254,18 @@ static irqreturn_t vgic_maintenance_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+/**
+ * kvm_vgic_vcpu_init - Initialize per-vcpu VGIC state
+ * @vcpu: pointer to the vcpu struct
+ *
+ * Initialize the vgic_cpu struct and vgic_dist struct fields pertaining to
+ * this vcpu and enable the VGIC for this VCPU
+ */
 int kvm_vgic_vcpu_init(struct kvm_vcpu *vcpu)
 {
 	struct vgic_cpu *vgic_cpu = &vcpu->arch.vgic_cpu;
 	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
 	int i;
-
-	if (!irqchip_in_kernel(vcpu->kvm))
-		return 0;
 
 	if (vcpu->vcpu_id >= VGIC_MAX_CPUS)
 		return -EBUSY;
@@ -1362,16 +1376,32 @@ int kvm_vgic_hyp_init(void)
 		goto out_unmap;
 	}
 
-	kvm_info("%s@%llx IRQ%d\n", vgic_node->name,
-		 vctrl_res.start, vgic_maint_irq);
-	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
-
 	if (of_address_to_resource(vgic_node, 3, &vcpu_res)) {
 		kvm_err("Cannot obtain VCPU resource\n");
 		ret = -ENXIO;
 		goto out_unmap;
 	}
+
+	if (!PAGE_ALIGNED(vcpu_res.start)) {
+		kvm_err("GICV physical address 0x%llx not page aligned\n",
+			(unsigned long long)vcpu_res.start);
+		ret = -ENXIO;
+		goto out_unmap;
+	}
+
+	if (!PAGE_ALIGNED(resource_size(&vcpu_res))) {
+		kvm_err("GICV size 0x%llx not a multiple of page size 0x%lx\n",
+			(unsigned long long)resource_size(&vcpu_res),
+			PAGE_SIZE);
+		ret = -ENXIO;
+		goto out_unmap;
+	}
+
 	vgic_vcpu_base = vcpu_res.start;
+
+	kvm_info("%s@%llx IRQ%d\n", vgic_node->name,
+		 vctrl_res.start, vgic_maint_irq);
+	on_each_cpu(vgic_init_maintenance_interrupt, NULL, 1);
 
 	goto out;
 
@@ -1384,9 +1414,21 @@ out:
 	return ret;
 }
 
+/**
+ * kvm_vgic_init - Initialize global VGIC state before running any VCPUs
+ * @kvm: pointer to the kvm struct
+ *
+ * Map the virtual CPU interface into the VM before running any VCPUs.  We
+ * can't do this at creation time, because user space must first set the
+ * virtual CPU interface address in the guest physical address space.  Also
+ * initialize the ITARGETSRn regs to 0 on the emulated distributor.
+ */
 int kvm_vgic_init(struct kvm *kvm)
 {
 	int ret = 0, i;
+
+	if (!irqchip_in_kernel(kvm))
+		return 0;
 
 	mutex_lock(&kvm->lock);
 
@@ -1410,7 +1452,6 @@ int kvm_vgic_init(struct kvm *kvm)
 	for (i = VGIC_NR_PRIVATE_IRQS; i < VGIC_NR_IRQS; i += 4)
 		vgic_set_target_reg(kvm, 0, i);
 
-	kvm_timer_init(kvm);
 	kvm->arch.vgic.ready = true;
 out:
 	mutex_unlock(&kvm->lock);
@@ -1438,7 +1479,7 @@ out:
 	return ret;
 }
 
-static bool vgic_ioaddr_overlap(struct kvm *kvm)
+static int vgic_ioaddr_overlap(struct kvm *kvm)
 {
 	phys_addr_t dist = kvm->arch.vgic.vgic_dist_base;
 	phys_addr_t cpu = kvm->arch.vgic.vgic_cpu_base;
@@ -1461,10 +1502,11 @@ static int vgic_ioaddr_assign(struct kvm *kvm, phys_addr_t *ioaddr,
 	if (addr + size < addr)
 		return -EINVAL;
 
+	*ioaddr = addr;
 	ret = vgic_ioaddr_overlap(kvm);
 	if (ret)
-		return ret;
-	*ioaddr = addr;
+		*ioaddr = VGIC_ADDR_UNDEF;
+
 	return ret;
 }
 

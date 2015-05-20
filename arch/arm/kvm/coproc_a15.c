@@ -27,14 +27,13 @@
 static void reset_mpidr(struct kvm_vcpu *vcpu, const struct coproc_reg *r)
 {
 	/*
-	 * Compute guest MPIDR:
-	 * (Even if we present only one VCPU to the guest on an SMP
-	 * host we don't set the U bit in the MPIDR, or vice versa, as
-	 * revealing the underlying hardware properties is likely to
-	 * be the best choice).
+	 * Compute guest MPIDR. We build a virtual cluster out of the
+	 * vcpu_id, but we read the 'U' bit from the underlying
+	 * hardware directly.
 	 */
-	vcpu->arch.cp15[c0_MPIDR] = (read_cpuid_mpidr() & ~MPIDR_LEVEL_MASK)
-		| (vcpu->vcpu_id & MPIDR_LEVEL_MASK);
+	vcpu->arch.cp15[c0_MPIDR] = ((read_cpuid_mpidr() & MPIDR_SMP_BITMASK) |
+				   ((vcpu->vcpu_id >> 2) << MPIDR_LEVEL_BITS) |
+				   (vcpu->vcpu_id & 3));
 }
 
 #include "coproc.h"
@@ -80,6 +79,10 @@ static void reset_l2ctlr(struct kvm_vcpu *vcpu, const struct coproc_reg *r)
 	asm volatile("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
 	l2ctlr &= ~(3 << 24);
 	ncores = atomic_read(&vcpu->kvm->online_vcpus) - 1;
+	/* How many cores in the current cluster and the next ones */
+	ncores -= (vcpu->vcpu_id & ~3);
+	/* Cap it to the maximum number of cores in a single cluster */
+	ncores = min(ncores, 3U);
 	l2ctlr |= (ncores & 3) << 24;
 
 	vcpu->arch.cp15[c9_L2CTLR] = l2ctlr;
@@ -127,7 +130,7 @@ static const struct coproc_reg a15_regs[] = {
 
 	/* SCTLR: swapped by interrupt.S. */
 	{ CRn( 1), CRm( 0), Op1( 0), Op2( 0), is32,
-			NULL, reset_val, c1_SCTLR, 0x00C50078 },
+			access_sctlr, reset_val, c1_SCTLR, 0x00C50078 },
 	/* ACTLR: trapped by HCR.TAC bit. */
 	{ CRn( 1), CRm( 0), Op1( 0), Op2( 1), is32,
 			access_actlr, reset_actlr, c1_ACTLR },
