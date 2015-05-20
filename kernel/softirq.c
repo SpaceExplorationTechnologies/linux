@@ -212,11 +212,15 @@ static void handle_pending_softirqs(u32 pending, int cpu, int need_rcu_bh_qs)
 static void run_ksoftirqd(unsigned int cpu)
 {
 	local_irq_disable();
-	if (ksoftirqd_softirq_pending()) {
+	if (local_softirq_pending()) {
 		__do_softirq();
-		rcu_note_context_switch(cpu);
 		local_irq_enable();
 		cond_resched();
+
+		preempt_disable();
+		rcu_note_context_switch(cpu);
+		preempt_enable();
+
 		return;
 	}
 	local_irq_enable();
