@@ -214,9 +214,11 @@ static void run_ksoftirqd(unsigned int cpu)
 	local_irq_disable();
 	if (ksoftirqd_softirq_pending()) {
 		__do_softirq();
-		rcu_note_context_switch(cpu);
 		local_irq_enable();
 		cond_resched();
+		preempt_disable();
+		rcu_note_context_switch(cpu);
+		preempt_enable();
 		return;
 	}
 	local_irq_enable();
@@ -617,8 +619,8 @@ static void run_ksoftirqd(unsigned int cpu)
 	current->softirq_nestcnt++;
 	do_current_softirqs(1);
 	current->softirq_nestcnt--;
-	rcu_note_context_switch(cpu);
 	local_irq_enable();
+	rcu_note_context_switch(cpu);
 }
 
 /*
