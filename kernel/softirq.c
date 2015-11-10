@@ -569,7 +569,7 @@ EXPORT_SYMBOL(local_bh_disable);
 void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
 {
 	__local_bh_disable();
-	if (cnt & PREEMPT_CHECK_OFFSET)
+	if (cnt & PREEMPT_DISABLE_OFFSET)
 		preempt_disable();
 }
 
@@ -596,7 +596,7 @@ EXPORT_SYMBOL(local_bh_enable);
 extern void __local_bh_enable_ip(unsigned long ip, unsigned int cnt)
 {
 	__local_bh_enable();
-	if (cnt & PREEMPT_CHECK_OFFSET)
+	if (cnt & PREEMPT_DISABLE_OFFSET)
 		preempt_enable();
 }
 
