@@ -12,3 +12,4 @@ generic-y += trace_clock.h
 generic-y += irq_work.h
 generic-y += vga.h
 generic-y += xor.h
+generic-y += barrier.h
