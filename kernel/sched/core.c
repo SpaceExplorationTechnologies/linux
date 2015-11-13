@@ -4580,6 +4580,7 @@ recheck:
 		 */
 		enqueue_task(rq, p, oldprio <= p->prio ? ENQUEUE_HEAD : 0);
 	}
+
 	check_class_changed(rq, p, prev_class, oldprio);
 	task_rq_unlock(rq, p, &flags);
 
