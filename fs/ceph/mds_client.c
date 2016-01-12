@@ -1975,16 +1975,18 @@ static void __wake_requests(struct ceph_mds_client *mdsc,
 static void kick_requests(struct ceph_mds_client *mdsc, int mds)
 {
 	struct ceph_mds_request *req;
-	struct rb_node *p;
+	struct rb_node *p = rb_first(&mdsc->request_tree);
 
 	dout("kick_requests mds%d\n", mds);
-	for (p = rb_first(&mdsc->request_tree); p; p = rb_next(p)) {
+	while (p) {
 		req = rb_entry(p, struct ceph_mds_request, r_node);
+		p = rb_next(p);
 		if (req->r_got_unsafe)
 			continue;
 		if (req->r_session &&
 		    req->r_session->s_mds == mds) {
 			dout(" kicking tid %llu\n", req->r_tid);
+			list_del_init(&req->r_wait);
 			__do_request(mdsc, req);
 		}
 	}
@@ -2388,9 +2390,8 @@ static void handle_session(struct ceph_mds_session *session,
 		if (session->s_state == CEPH_MDS_SESSION_RECONNECTING)
 			pr_info("mds%d reconnect denied\n", session->s_mds);
 		remove_session_caps(session);
-		wake = 1; /* for good measure */
+		wake = 2; /* for good measure */
 		wake_up_all(&mdsc->session_close_wq);
-		kick_requests(mdsc, mds);
 		break;
 
 	case CEPH_SESSION_STALE:
@@ -2416,6 +2417,8 @@ static void handle_session(struct ceph_mds_session *session,
 	if (wake) {
 		mutex_lock(&mdsc->mutex);
 		__wake_requests(mdsc, &session->s_waiting);
+		if (wake == 2)
+			kick_requests(mdsc, mds);
 		mutex_unlock(&mdsc->mutex);
 	}
 	return;
