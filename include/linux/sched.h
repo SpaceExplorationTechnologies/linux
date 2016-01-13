@@ -1409,6 +1409,7 @@ struct task_struct {
 	struct mutex_waiter *blocked_on;
 #endif
 #ifdef CONFIG_PREEMPT_RT_FULL
+	int xmit_recursion;
 	int pagefault_disabled;
 #endif
 #ifdef CONFIG_TRACE_IRQFLAGS
