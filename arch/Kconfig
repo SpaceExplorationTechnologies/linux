@@ -46,6 +46,7 @@ config KPROBES
 config JUMP_LABEL
        bool "Optimize trace point call sites"
        depends on HAVE_ARCH_JUMP_LABEL
+       depends on (!INTERRUPT_OFF_HIST && !PREEMPT_OFF_HIST && !WAKEUP_LATENCY_HIST && !MISSED_TIMER_OFFSETS_HIST)
        help
          If it is detected that the compiler has support for "asm goto",
 	 the kernel will compile trace point locations with just a
