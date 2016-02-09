@@ -561,10 +561,10 @@ static int __thread_do_softirq(int cpu)
 	 */
 	if (local_softirq_pending())
 		__do_softirq_common(cpu >= 0);
-	local_unlock(local_softirq_lock);
 	unpin_current_cpu();
-	preempt_disable();
 	local_irq_enable();
+	local_unlock(local_softirq_lock);
+	preempt_disable();
 	return 0;
 }
 
