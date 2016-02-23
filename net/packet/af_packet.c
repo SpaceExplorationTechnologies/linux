@@ -2092,6 +2092,15 @@ static void tpacket_destruct_skb(struct sk_buff *skb)
 	sock_wfree(skb);
 }
 
+static void tpacket_set_protocol(const struct net_device *dev,
+				 struct sk_buff *skb)
+{
+	if (dev->type == ARPHRD_ETHER) {
+		skb_reset_mac_header(skb);
+		skb->protocol = eth_hdr(skb)->h_proto;
+	}
+}
+
 static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
 		void *frame, struct net_device *dev, int size_max,
 		__be16 proto, unsigned char *addr, int hlen)
@@ -2128,8 +2137,6 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
 	skb_reserve(skb, hlen);
 	skb_reset_network_header(skb);
 
-	if (!packet_use_direct_xmit(po))
-		skb_probe_transport_header(skb, 0);
 	if (unlikely(po->tp_tx_has_off)) {
 		int off_min, off_max, off;
 		off_min = po->tp_hdrlen - sizeof(struct sockaddr_ll);
@@ -2179,6 +2186,8 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
 				dev->hard_header_len);
 		if (unlikely(err))
 			return err;
+		if (!skb->protocol)
+			tpacket_set_protocol(dev, skb);
 
 		data += dev->hard_header_len;
 		to_write -= dev->hard_header_len;
@@ -2212,6 +2221,8 @@ static int tpacket_fill_skb(struct packet_sock *po, struct sk_buff *skb,
 		len_max = PAGE_SIZE;
 		len = ((to_write > len_max) ? len_max : to_write);
 	}
+
+	skb_probe_transport_header(skb, 0);
 
 	return tp_len;
 }
@@ -2538,8 +2549,8 @@ static int packet_snd(struct socket *sock, struct msghdr *msg, size_t len)
 		len += vnet_hdr_len;
 	}
 
-	if (!packet_use_direct_xmit(po))
-		skb_probe_transport_header(skb, reserve);
+	skb_probe_transport_header(skb, reserve);
+
 	if (unlikely(extra_len == 4))
 		skb->no_fcs = 1;
 
