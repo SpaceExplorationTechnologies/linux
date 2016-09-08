@@ -38,6 +38,8 @@
 #include <linux/prefetch.h>
 #include <linux/ratelimit.h>
 #include <linux/delay.h>
+#include <linux/sched/rt.h>
+#include <linux/sched/deadline.h>
 #include "internal.h"
 #include "mount.h"
 
@@ -527,6 +529,8 @@ relock:
  */
 void dput(struct dentry *dentry)
 {
+	struct dentry *parent;
+
 	if (!dentry)
 		return;
 
@@ -564,9 +568,19 @@ repeat:
 	return;
 
 kill_it:
-	dentry = dentry_kill(dentry, 1);
-	if (dentry)
+	parent = dentry_kill(dentry, 1);
+	if (parent) {
+		int r;
+
+		if (parent == dentry) {
+			/* the task with the highest priority won't schedule */
+			r = cond_resched();
+			if (!r && (rt_task(current) || dl_task(current)))
+				cpu_chill();
+		} else
+			dentry = parent;
 		goto repeat;
+	}
 }
 EXPORT_SYMBOL(dput);
 
