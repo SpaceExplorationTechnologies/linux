@@ -109,7 +109,8 @@ DEFINE_PER_CPU(mce_banks_t, mce_poll_banks) = {
  */
 mce_banks_t mce_banks_ce_disabled;
 
-static DEFINE_PER_CPU(struct work_struct, mce_work);
+static struct work_struct mce_work;
+static struct irq_work mce_irq_work;
 
 static void (*quirk_no_way_out)(int bank, struct mce *m, struct pt_regs *regs);
 
@@ -525,10 +526,8 @@ int mce_available(struct cpuinfo_x86 *c)
 static void mce_schedule_work(void)
 {
 	if (!mce_ring_empty())
-		schedule_work(this_cpu_ptr(&mce_work));
+		schedule_work(&mce_work);
 }
-
-static DEFINE_PER_CPU(struct irq_work, mce_irq_work);
 
 static void mce_irq_work_cb(struct irq_work *entry)
 {
@@ -550,7 +549,7 @@ static void mce_report_event(struct pt_regs *regs)
 		return;
 	}
 
-	irq_work_queue(this_cpu_ptr(&mce_irq_work));
+	irq_work_queue(&mce_irq_work);
 }
 
 /*
@@ -1735,8 +1734,6 @@ void mcheck_cpu_init(struct cpuinfo_x86 *c)
 	__mcheck_cpu_init_generic();
 	__mcheck_cpu_init_vendor(c);
 	__mcheck_cpu_init_timer();
-	INIT_WORK(this_cpu_ptr(&mce_work), mce_process_work);
-	init_irq_work(this_cpu_ptr(&mce_irq_work), &mce_irq_work_cb);
 }
 
 /*
@@ -2056,6 +2053,9 @@ int __init mcheck_init(void)
 {
 	mcheck_intel_therm_init();
 	mcheck_vendor_init_severity();
+
+	INIT_WORK(&mce_work, mce_process_work);
+	init_irq_work(&mce_irq_work, mce_irq_work_cb);
 
 	return 0;
 }

@@ -17,8 +17,6 @@
 #include <linux/fs.h>
 #include <linux/seq_file.h>
 #include <linux/kernfs.h>
-#include <linux/wait.h>
-#include <linux/work-simple.h>
 
 #include <linux/cgroup-defs.h>
 
@@ -93,6 +91,26 @@ static inline bool css_tryget_online(struct cgroup_subsys_state *css)
 	if (!(css->flags & CSS_NO_REF))
 		return percpu_ref_tryget_live(&css->refcnt);
 	return true;
+}
+
+/**
+ * css_is_dying - test whether the specified css is dying
+ * @css: target css
+ *
+ * Test whether @css is in the process of offlining or already offline.  In
+ * most cases, ->css_online() and ->css_offline() callbacks should be
+ * enough; however, the actual offline operations are RCU delayed and this
+ * test returns %true also when @css is scheduled to be offlined.
+ *
+ * This is useful, for example, when the use case requires synchronous
+ * behavior with respect to cgroup removal.  cgroup removal schedules css
+ * offlining but the css can seem alive while the operation is being
+ * delayed.  If the delay affects user visible semantics, this test can be
+ * used to resolve the situation.
+ */
+static inline bool css_is_dying(struct cgroup_subsys_state *css)
+{
+	return !(css->flags & CSS_NO_REF) && percpu_ref_is_dying(&css->refcnt);
 }
 
 /**
