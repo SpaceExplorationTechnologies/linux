@@ -363,7 +363,7 @@ static void workqueue_sysfs_unregister(struct workqueue_struct *wq);
 			   "RCU or wq->mutex should be held")
 
 #define assert_rcu_or_wq_mutex_or_pool_mutex(wq)			\
-	rcu_lockdep_assert(rcu_read_lock_sched_held() ||		\
+	rcu_lockdep_assert(rcu_read_lock_held() ||			\
 			   lockdep_is_held(&wq->mutex) ||		\
 			   lockdep_is_held(&wq_pool_mutex),		\
 			   "sched RCU, wq->mutex or wq_pool_mutex should be held")
