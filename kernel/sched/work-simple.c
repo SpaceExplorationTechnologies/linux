@@ -11,7 +11,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 
-#define SWORK_EVENT_PENDING     (1 << 0)
+#define SWORK_EVENT_PENDING     1
 
 static DEFINE_MUTEX(worker_mutex);
 static struct sworker *glob_worker;
