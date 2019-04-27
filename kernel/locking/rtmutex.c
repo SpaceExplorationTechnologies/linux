@@ -2500,6 +2500,7 @@ bool rt_mutex_cleanup_proxy_lock(struct rt_mutex *lock,
 		remove_waiter(lock, waiter);
 		cleanup = true;
 	}
+
 	/*
 	 * try_to_take_rt_mutex() sets the waiter bit unconditionally. We might
 	 * have to fix that up.
