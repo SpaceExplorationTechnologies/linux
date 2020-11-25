@@ -167,6 +167,13 @@ struct spi_mem_dirmap_desc {
 	void *priv;
 };
 
+#ifdef CONFIG_SPACEX
+enum spi_mem_option_flags {
+	SMEM_F_USE_DUAL_CHIP	= BIT(0),
+	SMEM_F_USE_STRIPE	= BIT(1),
+};
+#endif /* CONFIG_SPACEX */
+
 /**
  * struct spi_mem - describes a SPI memory device
  * @spi: the underlying SPI device
@@ -183,6 +190,17 @@ struct spi_mem {
 	struct spi_device *spi;
 	void *drvpriv;
 	const char *name;
+#ifdef CONFIG_SPACEX
+	u32 flags;
+
+	/**
+	 * Array holding register reads used to coalesce the two chips when
+	 * striping.
+	 * This needs to be twice as big as the largest register read.
+	 * Size of struct_sfdp_bfpt from spi-nor.c drives this.
+	 */
+	u8 striped_reg_rd_buf[64*2];
+#endif /* CONFIG_SPACEX */
 };
 
 /**

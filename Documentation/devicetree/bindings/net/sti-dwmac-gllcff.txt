@@ -1,0 +1,60 @@
+STMicroelectronics GLLCFF SoC DWMAC glue layer controller
+
+This file documents differences between the core properties in
+Documentation/devicetree/bindings/net/stmmac.txt
+and what is needed on STi platforms to program the stmmac glue logic.
+
+The device node has following properties.
+
+Refer to Documentation/devicetree/bindings/net/stmmac.txt for optional and
+required properties needed for the main and platform part.
+
+Required properties:
+ - compatible:
+	- "st,gllcff-dwmac0" for GMAC0
+	- "st,gllcff-dwmac1" for GMAC1
+ - phys: phandle to an external phy
+ - phy-names: must be "gmac-phy"
+ - phy-mode: can be "mii" or "gmii"
+Optional properties:
+ - snps,phy-addr: Indicate the ID of the Embedded PHY
+ - disable-pcs: Disable PCS.
+ - disable-fcs: Strip FCS from frames.
+
+Example:
+
+ethernet0: dwmac@16800000 {
+	device_type = "network";
+	compatible = "st,gllcff-dwmac";
+	reg = <0x16800000 0x10000>;
+	reg-names = "stmmaceth";
+
+	reset-names = "stmmaceth";
+
+	interrupts = <GIC_SPI 85 IRQ_TYPE_NONE>,
+		     <GIC_SPI 84 IRQ_TYPE_NONE>,
+		     <GIC_SPI 83 IRQ_TYPE_NONE>;
+	interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
+
+	phy-names = "gmac-phy";
+	phy-mode = "gmii";
+	snps,phy-addr = <0x2>;
+	phys = <&ephy PHY_NONE>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mdio1>;
+
+	resets = <&softreset GGLCFF_FC7_RST_GMAC_1_APP_N>;
+	reset-names = "stmmaceth";
+
+	clock-names = "stmmaceth", "pclk", "ptp_ref";
+	clocks = <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_0>,
+		 <&clk_s_c0_flexgen CLK_PERIPH_1>,
+		 <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_0>;
+
+	snps,pbl = <8>;
+
+	power-domains = <&gmac1_fcgate>;
+
+	status = "disabled";
+};

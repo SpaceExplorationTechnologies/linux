@@ -970,6 +970,13 @@ int dma_async_device_register(struct dma_device *device)
 		return -EIO;
 	}
 
+	if (dma_has_cap(DMA_SG, device->cap_mask) && !device->device_prep_dma_sg) {
+		dev_err(device->dev,
+			"Device claims capability %s, but op is not defined\n",
+			"DMA_SG");
+		return -EIO;
+	}
+
 	if (dma_has_cap(DMA_CYCLIC, device->cap_mask) && !device->device_prep_dma_cyclic) {
 		dev_err(device->dev,
 			"Device claims capability %s, but op is not defined\n",
@@ -995,6 +1002,10 @@ int dma_async_device_register(struct dma_device *device)
 		dev_err(device->dev, "Device issue_pending is not defined\n");
 		return -EIO;
 	}
+
+	BUG_ON(!device->device_tx_status);
+	BUG_ON(!device->device_issue_pending);
+	BUG_ON(!device->dev);
 
 	/* note: this only matters in the
 	 * CONFIG_ASYNC_TX_ENABLE_CHANNEL_SWITCH=n case

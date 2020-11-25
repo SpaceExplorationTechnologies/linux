@@ -1,0 +1,148 @@
+/*
+ * SpaceX Catson Common 128Mbyte SPI-NOR layout.
+ *
+ * spacex_catson_spi_nor_layout.dtsi
+ *
+ * Defines common layout used by A/B boot scheme both on the phased array panels
+ * and on reference boards.
+ */
+
+/ {
+	soc {
+		spisfc0: spisfc@1e302000 {
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				/* Primary bootloader (Boot ROM extensions) */
+				partition@00000000  {
+					label = "bootfip0";
+					reg = <0x00000000 0x00100000>;
+				};
+				partition@00100000 {
+					label = "bootfip1";
+					reg = <0x00100000 0x00100000>;
+				};
+				partition@00200000 {
+					label = "bootfip2";
+					reg = <0x00200000 0x00100000>;
+				};
+				partition@00300000 {
+					label = "bootfip3";
+					reg = <0x00300000 0x00100000>;
+				};
+				partition@00400000 {
+					label = "bfipterm1";
+					reg = <0x00400000 0x00010000>;
+				};
+				partition@00480000 {
+					label = "bootmask";
+					reg = <0x00480000 0x00080000>;
+				};
+				partition@00500000 {
+					label = "bfipterm2";
+					reg = <0x00500000 0x00010000>;
+				};
+
+				/* Regular bootloaders */
+				partition@00600000  {
+					label = "boot.a.0 boot.0";
+					reg = <0x00600000 0x00100000>;
+				};
+				partition@00700000 {
+					label = "boot.b.0 boot.1";
+					reg = <0x00700000 0x00100000>;
+				};
+				partition@00800000 {
+					label = "boot.a.1 boot.2";
+					reg = <0x00800000 0x00100000>;
+				};
+				partition@00900000 {
+					label = "boot.b.1 boot.3";
+					reg = <0x00900000 0x00100000>;
+				};
+				partition@00A00000 {
+					label = "bootterm1";
+					reg = <0x00A00000 0x00010000>;
+				};
+				partition@00B00000 {
+					label = "bootterm2";
+					reg = <0x00B00000 0x00010000>;
+				};
+
+				/*
+				 * Linux kernel OOPS logs.
+				 */
+				partition@00f00000 {
+					reg = <0x00f00000 0x00020000>;
+					label = "mtdoops";
+				};
+
+				/*
+				 * Per-device version info storage.
+				 */
+				partition@00f30000 {
+					reg = <0x00f30000 0x00020000>;
+					label = "version_info.a version_info";
+				};
+				partition@00f50000 {
+					reg = <0x00f50000 0x00020000>;
+					label = "version_info.b";
+				};
+
+				/*
+				 * Per-device private key storage.
+				 */
+				partition@00f70000 {
+					reg = <0x00f70000 0x00020000>;
+					label = "secrets.a secrets";
+				};
+				partition@00f90000 {
+					reg = <0x00f90000 0x00020000>;
+					label = "secrets.b";
+				};
+
+				/*
+				 * SXID (192k)
+				 */
+				partition@00fb0000 {
+					reg = <0x00fb0000 0x00050000>;
+					label = "sxid";
+				};
+
+				/*
+				 * Linux kernel and platform file system (32MB) x2
+				 */
+				partition@01000000 {
+					reg = <0x01000000 0x01800000>;
+					label = "kernel.a kernel";
+				};
+				partition@02800000 {
+					reg = <0x02800000 0x00800000>;
+					label = "calibrations.a calibrations";
+				};
+				partition@03000000 {
+					reg = <0x03000000 0x01800000>;
+					label = "kernel.b";
+				};
+				partition@04800000 {
+					reg = <0x04800000 0x00800000>;
+					label = "calibrations.b";
+				};
+
+				/*
+				 * SpaceX rocket application (24MB) x2
+				 */
+				partition@05000000 {
+					reg = <0x05000000 0x01800000>;
+					label = "sx.a sx";
+				};
+				partition@06800000 {
+					reg = <0x06800000 0x01800000>;
+					label = "sx.b";
+				};
+			}; /* partitions */
+		}; /* spisfc0 */
+	}; /* soc */
+};

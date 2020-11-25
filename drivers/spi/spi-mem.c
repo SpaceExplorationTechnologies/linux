@@ -12,6 +12,10 @@
 
 #include "internals.h"
 
+#ifdef CONFIG_SPACEX
+#include <linux/mtd/spi-nor.h>
+#endif /* CONFIG_SPACEX */
+
 #define SPI_MEM_MAX_BUSWIDTH		8
 
 /**
@@ -258,6 +262,199 @@ static void spi_mem_access_end(struct spi_mem *mem)
 		pm_runtime_put(ctlr->dev.parent);
 }
 
+#ifdef CONFIG_SPACEX
+static bool spi_mem_is_data_xfer(u8 opcode)
+{
+	switch (opcode) {
+	case SPINOR_OP_READ:
+	case SPINOR_OP_READ_4B:
+	case SPINOR_OP_READ_FAST:
+	case SPINOR_OP_READ_FAST_4B:
+	case SPINOR_OP_READ_1_1_2:
+	case SPINOR_OP_READ_1_1_2_4B:
+	case SPINOR_OP_READ_1_2_2:
+	case SPINOR_OP_READ_1_2_2_4B:
+	case SPINOR_OP_READ_1_1_4:
+	case SPINOR_OP_READ_1_1_4_4B:
+	case SPINOR_OP_READ_1_4_4:
+	case SPINOR_OP_READ_1_4_4_4B:
+	case SPINOR_OP_READ_1_1_8:
+	case SPINOR_OP_READ_1_1_8_4B:
+	case SPINOR_OP_READ_1_8_8:
+	case SPINOR_OP_READ_1_8_8_4B:
+	case SPINOR_OP_READ_1_1_1_DTR:
+	case SPINOR_OP_READ_1_1_1_DTR_4B:
+	case SPINOR_OP_READ_1_2_2_DTR:
+	case SPINOR_OP_READ_1_2_2_DTR_4B:
+	case SPINOR_OP_READ_1_4_4_DTR:
+	case SPINOR_OP_READ_1_4_4_DTR_4B:
+	case SPINOR_OP_PP:
+	case SPINOR_OP_PP_4B:
+	case SPINOR_OP_PP_1_1_4:
+	case SPINOR_OP_PP_1_1_4_4B:
+	case SPINOR_OP_PP_1_4_4:
+	case SPINOR_OP_PP_1_4_4_4B:
+	case SPINOR_OP_PP_1_1_8:
+	case SPINOR_OP_PP_1_1_8_4B:
+	case SPINOR_OP_PP_1_8_8:
+	case SPINOR_OP_PP_1_8_8_4B:
+	case SPINOR_OP_AAI_WP:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool spi_mem_is_register_read(u8 opcode)
+{
+	switch (opcode) {
+	case SPINOR_OP_RDSR:
+	case SPINOR_OP_RDSR2:
+	case SPINOR_OP_RDFSR:
+	case SPINOR_OP_XRDSR:
+	case SPINOR_OP_RDID:
+	case SPINOR_OP_RDSFDP:
+	case SPINOR_OP_RDCR:
+	case SPINOR_OP_RDEAR:
+	case SPINOR_OP_RD_EVCR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
+ * spi_mem_adjust_opcode_xfer_for_striping() - Alter opcode spi transfer
+ *					       when using striping (two chips).
+ * @striping: Whether striping is used.
+ * @opcode: Opcode for this op.
+ * @addr: Address for this op, if specified.  0 otherwise.
+ * @xfer: Pointer to the spi transfer to edit.
+ *
+ * Most operations need to go to both chips in the case striping is used
+ * except for data transfers to odd addresses.
+ * In this odd address case we transfer only one byte with the upper chip.
+ * After this single-byte transfer spi-nor.c will initiate another transfer
+ * to the following even address.
+ */
+static void spi_mem_adjust_opcode_xfer_for_striping(bool striping,
+						    u8 opcode,
+						    u64 addr,
+						    struct spi_transfer *xfer)
+{
+	if (!striping)
+		return;
+
+	xfer->parallel_mode = SPI_PARALLEL_MODE_CLONE;
+	if (spi_mem_is_data_xfer(opcode) && (addr & 1))
+		xfer->parallel_mode = SPI_PARALLEL_MODE_UPPER;
+}
+
+/**
+ * spi_mem_adjust_address_xfer_for_striping() - Alter address spi transfer
+ *						 when using striping.
+ * @striping: Whether striping is used.
+ * @opcode: Opcode for this op.
+ * @addr: Address for this op, if specified.  0 otherwise.
+ * @xfer: Pointer to the spi transfer to edit.
+ *
+ * Divide address by 2.  This is needed because of how we abstract the
+ * striping.  We alternate bytes across the chips - the lowest address bit can
+ * be thought as a chip index.
+ * The handling of the parallel_mode flag is the same as it is for the opcode.
+ */
+static void spi_mem_adjust_address_xfer_for_striping(
+		bool striping,
+		u8 opcode,
+		u64 addr,
+		struct spi_transfer *xfer)
+{
+	int addr_byte;
+
+	if (!striping)
+		return;
+
+	for (addr_byte = 0; addr_byte < xfer->len; addr_byte++)
+		((u8 *)xfer->tx_buf)[addr_byte] = (addr >> 1) >>
+				(8 * (xfer->len - addr_byte - 1));
+
+	xfer->parallel_mode = SPI_PARALLEL_MODE_CLONE;
+	if (spi_mem_is_data_xfer(opcode) && (addr & 1))
+		xfer->parallel_mode = SPI_PARALLEL_MODE_UPPER;
+}
+
+/**
+ * spi_mem_adjust_dummy_xfer_for_striping() - Alter dummy byte spi transfer
+ *					       when using striping (two chips).
+ * @striping: Whether striping is used.
+ * @opcode: Opcode for this op.
+ * @addr: Address for this op, if specified.  0 otherwise.
+ * @xfer: Pointer to the spi transfer to edit.
+ *
+ * Same handling as that used for the opcode xfer - duplicate to all chips
+ * except when doing a data transfer to an odd address.
+ */
+static void spi_mem_adjust_dummy_xfer_for_striping(bool striping,
+						   u8 opcode,
+						   u64 addr,
+						   struct spi_transfer *xfer)
+{
+	spi_mem_adjust_opcode_xfer_for_striping(striping, opcode, addr, xfer);
+}
+
+/**
+ * spi_mem_adjust_data_xfer_for_striping() - Alter data spi transfer
+ *					      when using striping (two chips).
+ * @striping: Whether striping is used.
+ * @opcode: Opcode for this op.
+ * @addr: Address for this op, if specified.  0 otherwise.
+ * @striped_reg_rd_buf: If reading registers put the values here.
+ * @xfer: Pointer to the spi transfer to edit.
+ *
+ * Use clone in the case of a register write or command.
+ * Send only to the second chip if data transferring to an odd address.
+ * Other data transfers use striping.
+ * Register reads also use striping.
+ *
+ * In the case of the data transfer with the odd address, knock the length down
+ * to one byte.
+ * If doing a register read, we are going to read the register(s) from both
+ * chips, so double the length of the transfer.
+ */
+static void spi_mem_adjust_data_xfer_for_striping(bool striping,
+						  u8 opcode,
+						  u64 addr,
+						  u8 *striped_reg_rd_buf,
+						  struct spi_transfer *xfer)
+{
+	if (!striping)
+		return;
+
+	xfer->parallel_mode = SPI_PARALLEL_MODE_CLONE;
+
+	/*
+	 * If the address is odd, then the first byte needs to come from the
+	 * upper chip. The SPI controller has no way of handling this so we
+	 * need to do a the single-byte transfer first and then let the calling
+	 * function continue from an even offset.
+	 *
+	 * However, the SPI controller does correctly handle odd lengths by
+	 * reading the last byte from the lower SPI flash only.
+	 */
+	if (spi_mem_is_data_xfer(opcode) && (addr & 1)) {
+		xfer->parallel_mode = SPI_PARALLEL_MODE_UPPER;
+		xfer->len = 1;
+	} else if (spi_mem_is_data_xfer(opcode)) {
+		xfer->parallel_mode = SPI_PARALLEL_MODE_STRIPE;
+	} else if (spi_mem_is_register_read(opcode)) {
+		xfer->parallel_mode = SPI_PARALLEL_MODE_STRIPE;
+		xfer->len *= 2;
+		xfer->rx_buf = striped_reg_rd_buf;
+	}
+}
+
+#endif /* CONFIG_SPACEX */
+
 /**
  * spi_mem_exec_op() - Execute a memory operation
  * @mem: the SPI memory
@@ -278,6 +475,20 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 	struct spi_message msg;
 	u8 *tmpbuf;
 	int ret;
+#ifdef CONFIG_SPACEX
+	int i = 0;
+	bool must_coalesce_read = mem->flags & SMEM_F_USE_STRIPE &&
+				    spi_mem_is_register_read(op->cmd.opcode);
+
+	if (must_coalesce_read &&
+	    op->data.nbytes > sizeof(mem->striped_reg_rd_buf)/2) {
+		dev_err(&mem->spi->dev,
+			"Register read exceeds maximum size (%d/%d bytes).\n",
+			op->data.nbytes,
+			sizeof(mem->striped_reg_rd_buf)/2);
+		return -EINVAL;
+	}
+#endif /* CONFIG_SPACEX */
 
 	ret = spi_mem_check_op(op);
 	if (ret)
@@ -322,6 +533,12 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 	xfers[xferpos].tx_buf = tmpbuf;
 	xfers[xferpos].len = sizeof(op->cmd.opcode);
 	xfers[xferpos].tx_nbits = op->cmd.buswidth;
+#ifdef CONFIG_SPACEX
+	spi_mem_adjust_opcode_xfer_for_striping(mem->flags & SMEM_F_USE_STRIPE,
+						op->cmd.opcode,
+						op->addr.val,
+						&xfers[xferpos]);
+#endif /* CONFIG_SPACEX */
 	spi_message_add_tail(&xfers[xferpos], &msg);
 	xferpos++;
 	totalxferlen++;
@@ -336,6 +553,13 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 		xfers[xferpos].tx_buf = tmpbuf + 1;
 		xfers[xferpos].len = op->addr.nbytes;
 		xfers[xferpos].tx_nbits = op->addr.buswidth;
+#ifdef CONFIG_SPACEX
+		spi_mem_adjust_address_xfer_for_striping(
+			mem->flags & SMEM_F_USE_STRIPE,
+			op->cmd.opcode,
+			op->addr.val,
+			&xfers[xferpos]);
+#endif /* CONFIG_SPACEX */
 		spi_message_add_tail(&xfers[xferpos], &msg);
 		xferpos++;
 		totalxferlen += op->addr.nbytes;
@@ -346,6 +570,13 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 		xfers[xferpos].tx_buf = tmpbuf + op->addr.nbytes + 1;
 		xfers[xferpos].len = op->dummy.nbytes;
 		xfers[xferpos].tx_nbits = op->dummy.buswidth;
+#ifdef CONFIG_SPACEX
+		spi_mem_adjust_dummy_xfer_for_striping(
+			mem->flags & SMEM_F_USE_STRIPE,
+			op->cmd.opcode,
+			op->addr.val,
+			&xfers[xferpos]);
+#endif /* CONFIG_SPACEX */
 		spi_message_add_tail(&xfers[xferpos], &msg);
 		xferpos++;
 		totalxferlen += op->dummy.nbytes;
@@ -361,6 +592,14 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 		}
 
 		xfers[xferpos].len = op->data.nbytes;
+#ifdef CONFIG_SPACEX
+		spi_mem_adjust_data_xfer_for_striping(
+			mem->flags & SMEM_F_USE_STRIPE,
+			op->cmd.opcode,
+			op->addr.val,
+			mem->striped_reg_rd_buf,
+			&xfers[xferpos]);
+#endif /* CONFIG_SPACEX */
 		spi_message_add_tail(&xfers[xferpos], &msg);
 		xferpos++;
 		totalxferlen += op->data.nbytes;
@@ -372,6 +611,47 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 
 	if (ret)
 		return ret;
+
+#ifdef CONFIG_SPACEX
+
+	/*
+	 * Deal with coalescing and consistency checking the register read
+	 * values from both chips.
+	 * Currently the register read values are in mem->striped_reg_rd_buf,
+	 * the lowest bit of the index being the chip index.
+	 */
+	if (must_coalesce_read) {
+		u8 *regs_rd = mem->striped_reg_rd_buf;
+
+		totalxferlen += op->data.nbytes;
+
+		/* For the ready bits, we must wait for either flash device */
+		if (op->cmd.opcode == SPINOR_OP_RDSR) {
+			regs_rd[0] |= (regs_rd[1] & SR_WIP);
+			regs_rd[1] |= (regs_rd[0] & SR_WIP);
+			regs_rd[0] &= ~(~regs_rd[1] & SR_WEL);
+			regs_rd[1] &= ~(~regs_rd[0] & SR_WEL);
+		}
+		if (op->cmd.opcode == SPINOR_OP_RDFSR) {
+			regs_rd[0] &= ~(~regs_rd[1] & FSR_READY);
+			regs_rd[1] &= ~(~regs_rd[0] & FSR_READY);
+		}
+
+		/*
+		 * We expect the flash devices to always be the same, with the
+		 * exception of the ready bits which we checked above.
+		 */
+		for (i = 0; i < op->data.nbytes; i++) {
+			if (regs_rd[i*2] != regs_rd[i*2+1])
+				dev_err(&mem->spi->dev,
+					"Stripe mode out of sync: reg %02X, len %d, pos %d, %02X != %02X\n",
+					op->cmd.opcode, op->data.nbytes, i,
+					regs_rd[i*2], regs_rd[i*2+1]);
+			((u8 *)op->data.buf.in)[i] = regs_rd[i*2];
+		}
+	}
+
+#endif /* CONFIG_SPACEX */
 
 	if (msg.actual_length != totalxferlen)
 		return -EIO;

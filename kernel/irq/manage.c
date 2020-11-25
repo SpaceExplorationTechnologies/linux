@@ -1231,9 +1231,11 @@ static int
 setup_irq_thread(struct irqaction *new, unsigned int irq, bool secondary)
 {
 	struct task_struct *t;
+#ifndef CONFIG_SPACEX
 	struct sched_param param = {
 		.sched_priority = MAX_USER_RT_PRIO/2,
 	};
+#endif /* !CONFIG_SPACEX */
 
 	if (!secondary) {
 		t = kthread_create(irq_thread, new, "irq/%d-%s", irq,
@@ -1241,13 +1243,17 @@ setup_irq_thread(struct irqaction *new, unsigned int irq, bool secondary)
 	} else {
 		t = kthread_create(irq_thread, new, "irq/%d-s-%s", irq,
 				   new->name);
+#ifndef CONFIG_SPACEX
 		param.sched_priority -= 1;
+#endif /* !CONFIG_SPACEX */
 	}
 
 	if (IS_ERR(t))
 		return PTR_ERR(t);
 
+#ifndef CONFIG_SPACEX
 	sched_setscheduler_nocheck(t, SCHED_FIFO, &param);
+#endif /* !CONFIG_SPACEX */
 
 	/*
 	 * We keep the reference to the task struct even if

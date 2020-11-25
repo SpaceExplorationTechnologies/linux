@@ -82,6 +82,9 @@ struct stmmac_mdio_bus_data {
 	int *irqs;
 	int probed_phy_irq;
 	bool needs_reset;
+#ifdef CONFIG_OF
+	int write_repeat;
+#endif
 };
 
 struct stmmac_dma_cfg {
@@ -179,5 +182,9 @@ struct plat_stmmacenet_data {
 	int mac_port_sel_speed;
 	bool en_tx_lpi_clockgating;
 	int has_xgmac;
+#ifdef CONFIG_SPACEX
+	bool disable_pcs;
+	bool disable_fcs;
+#endif
 };
 #endif

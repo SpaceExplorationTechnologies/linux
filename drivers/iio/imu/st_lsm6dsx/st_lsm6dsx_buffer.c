@@ -348,6 +348,11 @@ int st_lsm6dsx_read_fifo(struct st_lsm6dsx_hw *hw)
 	__le16 fifo_status;
 	s64 ts = 0;
 
+#ifdef CONFIG_SPACEX
+	if (WARN_ON(pattern_len >= ST_LSM6DSX_BUFF_SIZE))
+		return -ENOMEM;
+#endif /* CONFIG_SPACEX */
+
 	err = st_lsm6dsx_read_locked(hw,
 				     hw->settings->fifo_ops.fifo_diff.addr,
 				     &fifo_status, sizeof(fifo_status));
@@ -522,6 +527,14 @@ int st_lsm6dsx_read_tagged_fifo(struct st_lsm6dsx_hw *hw)
 	int i, err, read_len;
 	__le16 fifo_status;
 	s64 ts = 0;
+#ifdef CONFIG_SPACEX
+	int total_read_len = 0;
+
+	if (WARN_ON(pattern_len >= ST_LSM6DSX_BUFF_SIZE))
+		return -ENOMEM;
+
+	do {
+#endif /* CONFIG_SPACEX */
 
 	err = st_lsm6dsx_read_locked(hw,
 				     hw->settings->fifo_ops.fifo_diff.addr,
@@ -535,6 +548,12 @@ int st_lsm6dsx_read_tagged_fifo(struct st_lsm6dsx_hw *hw)
 	fifo_diff_mask = hw->settings->fifo_ops.fifo_diff.mask;
 	fifo_len = (le16_to_cpu(fifo_status) & fifo_diff_mask) *
 		   ST_LSM6DSX_TAGGED_SAMPLE_SIZE;
+
+#ifdef CONFIG_SPACEX
+	if (!fifo_len && total_read_len)
+		break;
+#endif /* CONFIG_SPACEX */
+
 	if (!fifo_len)
 		return 0;
 
@@ -580,11 +599,21 @@ int st_lsm6dsx_read_tagged_fifo(struct st_lsm6dsx_hw *hw)
 		}
 	}
 
+#ifdef CONFIG_SPACEX
+		total_read_len += read_len;
+	} while (1);
+#endif /* CONFIG_SPACEX */
+
 	if (unlikely(reset_ts)) {
 		err = st_lsm6dsx_reset_hw_ts(hw);
 		if (err < 0)
 			return err;
 	}
+
+#ifdef CONFIG_SPACEX
+	return total_read_len;
+#endif /* CONFIG_SPACEX */
+
 	return read_len;
 }
 

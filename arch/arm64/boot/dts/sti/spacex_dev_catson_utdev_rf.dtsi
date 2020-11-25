@@ -1,0 +1,99 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    /* Define the RF hardware available on the utdev board. */
+
+	gpios {
+		/*
+		 * Mod/demod lock detect.
+		 */
+		spi_up_ld    = <&pio23 0>;
+		spi_down_ld  = <&pio23 1>;
+
+		/*
+		 * Mark Sapper 3/6/19:
+		 * RF-CTL-GPIO needs to be driven low to enable the demod.
+		 * RF-TX-RX-SWITCH needs to be driven low to enable the mod.
+		 */
+		mod_enable_n   = <&pio22 4 1>; /* RF-TX-RX-SWITCH */
+		demod_enable_n = <&pio22 0 1>; /* RF-CTL-GPIO */
+
+	};
+
+	spidevs {
+		trf3722 = <&trf3722>;
+		adrf6820 = <&adrf6820>;
+	};
+
+	soc {
+		l1l2sync: l1l2sync {
+			pinctrl-0 = <&pinctrl_gps_1pps>;
+		};
+
+		serial1: serial@8860000 {
+			/* Disable serial1 to free PIO23[0:1] */
+			status = "disabled";
+		};
+
+		spi2@8830000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "okay";
+			num-cs = <1>;
+			cs-gpios = <&pio23 2 GPIO_ACTIVE_LOW>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi2_alt>;
+
+			/* Quadrature modulator (upconverter) */
+			trf3722: spi@0 {
+				/* spidev interface for checkout */
+				compatible = "sx,generic-spidev";
+				reg = <0>;
+
+				/*
+				 * 20 MHz chip (theoretical)
+				 * Catson limited to 14.285MHz
+				 * Drop SPI frequency to actually meet
+				 * setup/hold requirements
+				 */
+				spi-max-frequency = <7142500>;
+			};
+		};
+
+		spi3@8840000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "okay";
+			num-cs = <1>;
+			cs-gpios = <&pio23 3 GPIO_ACTIVE_LOW>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi3_alt>;
+
+			/* Quadrature demodulator (downconverter) */
+			adrf6820: spi@0 {
+				/* spidev interface for checkout */
+				compatible = "sx,generic-spidev";
+				reg = <0>;
+
+				/*
+				 * 26.3 MHz chip (theoretical)
+				 * Catson limited to 14.285MHz
+				 * Drop SPI frequency to actually meet
+				 * setup/hold requirements
+				 */
+				spi-max-frequency = <7142500>;
+			};
+		};
+	};
+};

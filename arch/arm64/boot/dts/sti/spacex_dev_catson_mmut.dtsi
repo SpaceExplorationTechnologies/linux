@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+    /* Define the RF hardware available on the utdev board. */
+
+	gpios {
+		/*
+		 * MMUT bootstrap ID pins
+		 */
+		slot_id_0    = <&pio12 4>;
+		slot_id_1    = <&pio12 5>;
+		slot_id_2    = <&pio12 6>;
+		slot_id_3    = <&pio12 7>;
+
+		chassis_id_0    = <&pio20 0>;
+		chassis_id_1    = <&pio20 1>;
+		chassis_id_2    = <&pio20 2>;
+		chassis_id_3    = <&pio20 3>;
+		chassis_id_4    = <&pio20 4>;
+		chassis_id_5    = <&pio20 5>;
+		chassis_id_6    = <&pio20 6>;
+		chassis_id_7    = <&pio20 7>;
+
+		/*
+		 * MMUT-specific pins.
+		 */
+		lv_warn         = <&pio23 5>;
+		vtt_pgood       = <&pio30 3>;
+		gps_reset     = <&pio11 7 0>;
+
+		/*
+		 * Mod/demod lock detect.
+		 */
+		spi_up_ld    = <&pio23 0>;
+		spi_down_ld  = <&pio23 1>;
+
+		/*
+		 * Mark Sapper 3/6/19:
+		 * RF-CTL-GPIO needs to be driven low to enable the demod.
+		 * RF-TX-RX-SWITCH needs to be driven low to enable the mod.
+		 */
+		mod_enable_n   = <&pio31 1 1>; /* MODE-ENA-A-3V */
+		demod_enable_n = <&pio31 2 1>; /* DEMOD-ENA-A-3V */
+
+	};
+
+	spidevs {
+		trf3722 = <&trf3722>;
+		adrf6820 = <&adrf6820>;
+	};
+
+	soc {
+		l1l2sync: l1l2sync {
+			pinctrl-0 = <&pinctrl_gps_1pps>;
+		};
+
+		spi2@8830000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "okay";
+			num-cs = <2>;
+			cs-gpios = <
+				&pio31 0 GPIO_ACTIVE_LOW /* Upconverter CSN */
+				&pio31 4 GPIO_ACTIVE_LOW /* Downconverter CSN */
+			>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi2_alt>;
+
+			/* Quadrature modulator (upconverter) */
+			trf3722: spi@0 {
+				/* spidev interface for checkout */
+				compatible = "sx,generic-spidev";
+				reg = <0>;
+
+				/*
+				 * 20 MHz chip (theoretical)
+				 * Catson limited to 14.285MHz
+				 * Drop SPI frequency to actually meet
+				 * setup/hold requirements
+				 */
+				spi-max-frequency = <7142500>;
+			};
+
+			/* Quadrature demodulator (downconverter) */
+			adrf6820: spi@1 {
+				/* spidev interface for checkout */
+				compatible = "sx,generic-spidev";
+				reg = <1>;
+
+				/*
+				 * 26.3 MHz chip (theoretical)
+				 * Catson limited to 14.285MHz
+				 * Drop SPI frequency to actually meet
+				 * setup/hold requirements
+				 */
+				spi-max-frequency = <7142500>;
+			};
+		};
+	};
+};

@@ -28,3 +28,4 @@ subdir-y += synaptics
 subdir-y += ti
 subdir-y += xilinx
 subdir-y += zte
+subdir-y += spacex

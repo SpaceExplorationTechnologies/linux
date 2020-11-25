@@ -1,0 +1,26 @@
+/*
+ * Public key node for dm-verity verified block devices.
+ */
+/ {
+	security: security {
+		dm-verity-pubkey = [
+			d0 cf 30 34 4d a6 00 4d
+			4d 0c 7b 84 ae 2a 4b 65
+			37 0f 97 49 6b 58 47 7b
+			f8 1b b5 60 04 39 92 0b
+		];
+
+		/*
+		 * Public key node for dm-verity verified calibration block
+		 * device on User Terminal. This key is used to verify
+		 * calibration partitions for both dev and prod provisioned
+		 * UTs.
+		 */
+		dm-verity-cal-pubkey = [
+			d9 87 9c 89 e5 d2 d9 2f
+			e3 58 eb be 00 85 07 5e
+			3f c9 03 34 62 04 23 98
+			3a fc ab 95 9a 01 92 4b
+		];
+	};
+};

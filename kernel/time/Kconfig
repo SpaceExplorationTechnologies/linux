@@ -50,7 +50,14 @@ config GENERIC_CLOCKEVENTS_MIN_ADJUST
 
 # Generic update of CMOS clock
 config GENERIC_CMOS_UPDATE
-	bool
+	bool "Enable update of CMOS RTC"
+	depends on PPC || X86 || (SUPERH && (SH_SH03 || SH_DREAMCAST)) || MN10300_RTC || MIPS
+	default y
+	help
+	  This option enables update of the CMOS RTC on platforms that
+	  supports it.
+
+	  Take the default if you are unsure.
 
 if GENERIC_CLOCKEVENTS
 menu "Timers subsystem"

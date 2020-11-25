@@ -236,6 +236,13 @@ struct flash_info {
 
 	/* Part specific fixup hooks. */
 	const struct spi_nor_fixups *fixups;
+
+#ifdef CONFIG_SPACEX
+	/* The number of dies in the package. Note that a value of 0
+	 * is the same as a value set to 1.
+	 */
+	u8		n_dies;
+#endif /* CONFIG_SPACEX */
 };
 
 #define JEDEC_MFR(info)	((info)->id[0])
@@ -825,12 +832,26 @@ static int spi_nor_wait_till_ready_with_timeout(struct spi_nor *nor,
 {
 	unsigned long deadline;
 	int timeout = 0, ret;
+	unsigned long msecs_delayed = 0;
 
-	deadline = jiffies + timeout_jiffies;
+	if (oops_in_progress) {
+		/*
+		 * jiffies won't change without interrupts, so we must spin-wait
+		 * (see mdelay() below)
+		 */
+		deadline = jiffies_to_msecs(timeout_jiffies);
+	} else {
+		deadline = jiffies + timeout_jiffies;
+	}
 
 	while (!timeout) {
-		if (time_after_eq(jiffies, deadline))
-			timeout = 1;
+		if (oops_in_progress) {
+			if (msecs_delayed > deadline)
+				timeout = 1;
+		} else {
+			if (time_after_eq(jiffies, deadline))
+				timeout = 1;
+		}
 
 		ret = spi_nor_ready(nor);
 		if (ret < 0)
@@ -838,7 +859,16 @@ static int spi_nor_wait_till_ready_with_timeout(struct spi_nor *nor,
 		if (ret)
 			return 0;
 
-		cond_resched();
+		if (oops_in_progress) {
+			/*
+			 * This is the only time I would condone using mdelay(),
+			 * since we are not real-time any more during OOPS.
+			 */
+			mdelay(1);
+			msecs_delayed += 1;
+		} else {
+			cond_resched();
+		}
 	}
 
 	dev_err(nor->dev, "flash operation timed out\n");
@@ -878,7 +908,12 @@ static int spi_nor_lock_and_prep(struct spi_nor *nor, enum spi_nor_ops ops)
 {
 	int ret = 0;
 
-	mutex_lock(&nor->lock);
+	if (oops_in_progress) {
+		if (!mutex_trylock(&nor->lock))
+			return -EBUSY;
+	} else {
+		mutex_lock(&nor->lock);
+	}
 
 	if (nor->prepare) {
 		ret = nor->prepare(nor, ops);
@@ -2046,6 +2081,14 @@ static int spi_nor_spansion_clear_sr_bp(struct spi_nor *nor)
 		.page_size = 256,					\
 		.flags = (_flags),
 
+#ifdef CONFIG_SPACEX
+#define INFO_MULTI_DIE(_jedec_id, _ext_id, _sector_size, _n_sectors,	\
+		       _n_dies, _flags)					\
+		INFO((_jedec_id), (_ext_id), (_sector_size),		\
+		     (_n_sectors), (_flags)	)			\
+		.n_dies = (_n_dies),
+#endif /* CONFIG_SPACEX */
+
 #define INFO6(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
 		.id = {							\
 			((_jedec_id) >> 16) & 0xff,			\
@@ -2309,12 +2352,21 @@ static const struct flash_info spi_nor_ids[] = {
 	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, SECT_4K | SPI_NOR_QUAD_READ) },
 	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
 	{ "n25q256ax1",  INFO(0x20bb19, 0, 64 * 1024,  512, SECT_4K | SPI_NOR_QUAD_READ) },
-	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
 	{ "mt25qu512a",  INFO6(0x20bb20, 0x104400, 64 * 1024, 1024,
 			       SECT_4K | USE_FSR | SPI_NOR_DUAL_READ |
 			       SPI_NOR_QUAD_READ | SPI_NOR_4B_OPCODES) },
+#ifndef CONFIG_SPACEX
 	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K |
 			      SPI_NOR_QUAD_READ) },
+	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+#else /* !CONFIG_SPACEX */
+	{ "n25q512a",    INFO_MULTI_DIE(0x20bb20, 0, 64 * 1024, 1024, 2, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+	{ "n25q512ax3",  INFO_MULTI_DIE(0x20ba20, 0, 64 * 1024, 1024, 2, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+	{ "mt25qu01gb",  INFO(0x20bb21, 0, 64 * 1024, 2048,
+		SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+	{ "mt25qu02gc",  INFO(0x20bb22, 0, 64 * 1024, 4096,
+		SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+#endif /* CONFIG_SPACEX */
 	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ | NO_CHIP_ERASE) },
 	{ "n25q00a",     INFO(0x20bb21, 0, 64 * 1024, 2048, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ | NO_CHIP_ERASE) },
 	{ "mt25ql02g",   INFO(0x20ba22, 0, 64 * 1024, 4096,
@@ -2546,6 +2598,11 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 {
 	struct spi_nor *nor = mtd_to_spi_nor(mtd);
 	ssize_t ret;
+#ifdef CONFIG_SPACEX
+	uint64_t die_size;
+	uint64_t start_die, end_die;
+	loff_t read_len;
+#endif /* CONFIG_SPACEX */
 
 	dev_dbg(nor->dev, "from 0x%08x, len %zd\n", (u32)from, len);
 
@@ -2558,7 +2615,24 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 
 		addr = spi_nor_convert_addr(nor, addr);
 
+#ifndef CONFIG_SPACEX
 		ret = spi_nor_read_data(nor, addr, len, buf);
+#else /* !CONFIG_SPACEX */
+		/* Prevent read across die boundaries */
+		read_len = len;
+		if (nor->n_dies > 1) {
+			die_size = mtd->size;
+			do_div(die_size, nor->n_dies);
+			start_die = from;
+			do_div(start_die, die_size);
+			end_die = (from + len) - 1;
+			do_div(end_die, die_size);
+
+			if (end_die > start_die)
+				read_len = ((start_die + 1) * die_size) - from;
+		}
+		ret = spi_nor_read_data(nor, addr, read_len, buf);
+#endif /* CONFIG_SPACEX */
 		if (ret == 0) {
 			/* We shouldn't see 0-length reads */
 			ret = -EIO;
@@ -2567,7 +2641,11 @@ static int spi_nor_read(struct mtd_info *mtd, loff_t from, size_t len,
 		if (ret < 0)
 			goto read_err;
 
+#ifndef CONFIG_SPACEX
 		WARN_ON(ret > len);
+#else /* !CONFIG_SPACEX */
+		WARN_ON(ret > read_len);
+#endif /* CONFIG_SPACEX */
 		*retlen += ret;
 		buf += ret;
 		from += ret;
@@ -4838,6 +4916,17 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_SPACEX
+	if (np && of_property_read_bool(np, "is-dual")) {
+		nor->flags |= SNOR_F_USE_DUAL_CHIP;
+		nor->spimem->flags |= SMEM_F_USE_DUAL_CHIP;
+	}
+	if (np && of_property_read_bool(np, "is-stripe")) {
+		nor->flags |= SNOR_F_USE_STRIPE;
+		nor->spimem->flags |= SMEM_F_USE_STRIPE;
+	}
+#endif /* CONFIG_SPACEX */
+
 	/* Reset SPI protocol for all commands. */
 	nor->reg_proto = SNOR_PROTO_1_1_1;
 	nor->read_proto = SNOR_PROTO_1_1_1;
@@ -4902,6 +4991,17 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 	mtd->_read = spi_nor_read;
 	mtd->_resume = spi_nor_resume;
 
+#ifdef CONFIG_SPACEX
+	if (nor->flags & SNOR_F_USE_DUAL_CHIP) {
+		dev_info(dev, "%s dual chip mode enabled\n", info->name);
+		mtd->size *= 2;
+	}
+	if (nor->flags & SNOR_F_USE_STRIPE) {
+		dev_info(dev, "%s striped mode enabled\n", info->name);
+		mtd->erasesize *= 2;
+	}
+#endif /* CONFIG_SPACEX */
+
 	if (nor->params.locking_ops) {
 		mtd->_lock = spi_nor_lock;
 		mtd->_unlock = spi_nor_unlock;
@@ -4909,10 +5009,19 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 	}
 
 	/* sst nor chips use AAI word program */
-	if (info->flags & SST_WRITE)
+	if (info->flags & SST_WRITE) {
 		mtd->_write = sst_write;
-	else
+	} else {
 		mtd->_write = spi_nor_write;
+		/*
+		 * This driver has been modified to check oops_in_progress and
+		 * avoid sleeping if true. But we can only really support it if the chip
+		 * driver supports it as well (and it, in turn, should check that its
+		 * spi_master supports it).
+		 */
+		if (nor->can_panic_write)
+			mtd->_panic_write = spi_nor_write;
+	}
 
 	if (info->flags & USE_FSR)
 		nor->flags |= SNOR_F_USE_FSR;
@@ -4932,6 +5041,20 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 
 	if (of_property_read_bool(np, "broken-flash-reset"))
 		nor->flags |= SNOR_F_BROKEN_RESET;
+
+#ifdef CONFIG_SPACEX
+	if (info->n_dies > 1) {
+		/* The total size shall be divisible by the number of
+		 * dies.
+		 */
+		WARN_ON(do_div(mtd->size, info->n_dies) != 0);
+	}
+	nor->n_dies = max(info->n_dies, (u8)1);
+	if (nor->flags & SNOR_F_USE_STRIPE) {
+		nor->page_size *= 2;
+		mtd->writebufsize = nor->page_size;
+	}
+#endif /* CONFIG_SPACEX */
 
 	/*
 	 * Configure the SPI memory:
@@ -4996,6 +5119,15 @@ static int spi_nor_probe(struct spi_mem *spimem)
 		return -ENOMEM;
 
 	nor->spimem = spimem;
+
+	/*
+	 * panic_write compatibility notification:
+	 * This tells callers that this driver supports checking oops_in_progress
+	 * and performing non-sleeping writes in that case; however, the spi_master
+	 * must also support this.
+	 */
+	nor->can_panic_write = spi->master->can_panic_write;
+
 	nor->dev = &spi->dev;
 	spi_nor_set_flash_node(nor, spi->dev.of_node);
 

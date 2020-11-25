@@ -1,0 +1,91 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_production.dtsi"
+
+/ {
+	aliases {
+		i2c4 = &i2c4;
+	};
+
+	gpios {
+		/*
+		 * GPS.
+		 */
+		gps_reset = <&pio21 4 1>; /* 0=reset, 1=run */
+
+		/*
+		 * Reset.
+		 */
+		self_reset = <&pio23 0 1>;   /* 0=reset*/
+
+		/*
+		 * Shiraz (digital beamformers).
+		 */
+		dbf_reset     = <&pio11 7 0>;
+		dbf_v0p9_ok   = <&pio31 1>;
+
+		/*
+		 * Pulsar (Front-End Modules).
+		 */
+		fem_v1p8_ok   = <&pio31 0>;
+
+		/*
+		 * Cady (clockgen).
+		 */
+		cady_power   = <&pio20 1 0>;
+		cady_v1p8_up = <&pio22 0 0>;
+
+		/*
+		 * Heaters. All Active HI.
+		 */
+		en_ctr_heater1  = <&pio10 5 0>;
+		en_ctr_heater2  = <&pio23 1 0>;
+		en_left_heater  = <&pio21 5 0>;
+		en_right_heater = <&pio23 2 0>;
+
+		/*
+		 * STSAFE reset, active low.
+		 */
+		stsafe_reset = <&pio32 4 0>;
+	};
+
+	soc {
+		/*
+		 * ADC temp sensors, voltage, and current monitors.
+		 *
+		 * V2 has 2 muxes on channels 3 and 5.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			vref-external = <1800>; /* 1.8v external reference */
+			use-external = <0 0 0 0 0 0 0 0>;
+
+			mux-gpio = <&pio12 4 0>,
+				   <&pio12 6 0>,
+				   <&pio12 7 0>;
+
+			mux@3 {
+				input-channel = <3>;
+				vchan-count = <8>;
+			};
+			mux@5 {
+				input-channel = <5>;
+				vchan-count = <8>;
+			};
+		};
+
+		/*
+		 * I2C4 (SCL:PIO23[3],SDA:PIO23[4]) for talking to STSAFE IC.
+		 */
+		i2c4: i2c4@8910000 {
+			status = "okay";
+		};
+	};
+};

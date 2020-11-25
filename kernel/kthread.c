@@ -24,6 +24,9 @@
 #include <linux/uaccess.h>
 #include <linux/numa.h>
 #include <trace/events/sched.h>
+#ifdef CONFIG_SPACEX
+#include <linux/cn_proc.h>
+#endif /* CONFIG_SPACEX */
 
 static DEFINE_SPINLOCK(kthread_create_lock);
 static LIST_HEAD(kthread_create_list);
@@ -348,6 +351,10 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 		 */
 		sched_setscheduler_nocheck(task, SCHED_NORMAL, &param);
 		set_cpus_allowed_ptr(task, cpu_all_mask);
+
+#ifdef CONFIG_SPACEX
+		proc_comm_connector(task);
+#endif /* CONFIG_SPACEX */
 	}
 	kfree(create);
 	return task;

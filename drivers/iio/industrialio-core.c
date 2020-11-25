@@ -161,6 +161,9 @@ static const char * const iio_chan_info_postfix[] = {
 	[IIO_CHAN_INFO_DEBOUNCE_TIME] = "debounce_time",
 	[IIO_CHAN_INFO_CALIBEMISSIVITY] = "calibemissivity",
 	[IIO_CHAN_INFO_OVERSAMPLING_RATIO] = "oversampling_ratio",
+#ifdef CONFIG_SPACEX
+	[IIO_CHAN_INFO_OVERSAMPLING_EN] = "oversampling_en",
+#endif /* CONFIG_SPACEX */
 };
 
 /**

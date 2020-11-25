@@ -51,7 +51,11 @@ obj-$(CONFIG_EDAC_AMD64)		+= amd64_edac_mod.o
 
 obj-$(CONFIG_EDAC_PASEMI)		+= pasemi_edac.o
 
+ifndef CONFIG_SPACEX
 mpc85xx_edac_mod-y			:= fsl_ddr_edac.o mpc85xx_edac.o
+else
+mpc85xx_edac_mod-y			:= fsl_ddr_edac.o mpc85xx_edac.o spacex_mpc85xx_cache_edac.o
+endif
 obj-$(CONFIG_EDAC_MPC85XX)		+= mpc85xx_edac_mod.o
 
 layerscape_edac_mod-y			:= fsl_ddr_edac.o layerscape_edac.o
@@ -87,3 +91,6 @@ obj-$(CONFIG_EDAC_TI)			+= ti_edac.o
 obj-$(CONFIG_EDAC_QCOM)			+= qcom_edac.o
 obj-$(CONFIG_EDAC_ASPEED)		+= aspeed_edac.o
 obj-$(CONFIG_EDAC_BLUEFIELD)		+= bluefield_edac.o
+obj-$(CONFIG_EDAC_CORTEX_ARM64)		+= cortex_arm64_edac.o
+obj-$(CONFIG_EDAC_STI_SRAM)		+= stsram_edac.o
+obj-$(CONFIG_EDAC_CADENCE)		+= cadence_edac.o

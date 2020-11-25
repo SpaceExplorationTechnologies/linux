@@ -539,6 +539,21 @@ static unsigned short i2c_encode_flags_to_addr(struct i2c_client *client)
 	return addr;
 }
 
+#ifdef CONFIG_I2C_DISABLE_ADDRESS_CHECK
+/* This is a permissive address validity check, I2C address map constraints
+ * are purposely not enforced. Some peripherals do use the general call address
+ * so allow it if this option is selected. */
+static int i2c_check_addr_validity(unsigned addr, unsigned short flags)
+{
+	return 0;
+}
+
+/* Accept everything for the strict check. */
+static int i2c_check_7bit_addr_validity_strict(unsigned short addr)
+{
+	return 0;
+}
+#else /* CONFIG_I2C_DISABLE_ADDRESS_CHECK */
 /* This is a permissive address validity check, I2C address map constraints
  * are purposely not enforced, except for the general call address. */
 static int i2c_check_addr_validity(unsigned int addr, unsigned short flags)
@@ -575,6 +590,7 @@ int i2c_check_7bit_addr_validity_strict(unsigned short addr)
 		return -EINVAL;
 	return 0;
 }
+#endif /* CONFIG_I2C_DISABLE_ADDRESS_CHECK */
 
 static int __i2c_check_addr_busy(struct device *dev, void *addrp)
 {
@@ -1092,6 +1108,16 @@ i2c_sysfs_new_device(struct device *dev, struct device_attribute *attr,
 	client = i2c_new_client_device(adap, &info);
 	if (IS_ERR(client))
 		return PTR_ERR(client);
+
+#ifdef CONFIG_SPACEX
+	if (!client->dev.driver) {
+		dev_err(&client->dev,
+			"Failed to attach driver type '%s' at addr 0x%04x\n",
+			info.type, info.addr);
+		i2c_unregister_device(client);
+		return -ENODEV;
+	}
+#endif /* CONFIG_SPACEX */
 
 	/* Keep track of the added device */
 	mutex_lock(&adap->userspace_clients_lock);

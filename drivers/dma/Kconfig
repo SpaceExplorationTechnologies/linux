@@ -197,12 +197,23 @@ config FSL_DMA
 	tristate "Freescale Elo series DMA support"
 	depends on FSL_SOC
 	select DMA_ENGINE
-	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
+	select ASYNC_TX_ENABLE_CHANNEL_SWITCH if !SPACEX
 	---help---
 	  Enable support for the Freescale Elo series DMA controllers.
 	  The Elo is the DMA controller on some mpc82xx and mpc83xx parts, the
 	  EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the Elo3 is on
 	  some Txxx and Bxxx parts.
+
+config FSL_DMA_BWC
+	int "Bandwidth control byte length"
+	depends on FSL_DMA
+	range -1 10
+	default 4
+	help
+	  How many bytes a given channel may transfer before yielding the bus to
+	  another channel. A value of N corresponds to a length of 2^N bytes,
+	  except for -1, which disables the feature and allows uninterrupted
+	  transfers from each channel.
 
 config FSL_EDMA
 	tristate "Freescale eDMA engine support"
@@ -367,7 +378,7 @@ config MOXART_DMA
 	select DMA_VIRTUAL_CHANNELS
 	help
 	  Enable support for the MOXA ART SoC DMA controller.
- 
+
 	  Say Y here if you enabled MMP ADMA, otherwise say N.
 
 config MPC512X_DMA

@@ -286,7 +286,7 @@ config XTENSA_MX
 	select GENERIC_IRQ_EFFECTIVE_AFF_MASK
 
 config XILINX_INTC
-	bool
+	bool "Xilinx AXI Interrupt Controller"
 	select IRQ_DOMAIN
 
 config IRQ_CROSSBAR
@@ -494,5 +494,9 @@ config SIFIVE_PLIC
 	   interrupt sources are subordinate to the PLIC.
 
 	   If you don't know what to do here, say Y.
+
+config SX_CATSON_INTC
+	bool "SpaceX Catson Interrupt Expander"
+	select IRQ_DOMAIN
 
 endmenu

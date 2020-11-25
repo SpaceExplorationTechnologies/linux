@@ -18,6 +18,9 @@
 #define ST_LSM6DSL_DEV_NAME	"lsm6dsl"
 #define ST_LSM6DSM_DEV_NAME	"lsm6dsm"
 #define ST_ISM330DLC_DEV_NAME	"ism330dlc"
+#ifdef CONFIG_SPACEX
+#define ST_ISM330DHC_DEV_NAME	"ism330dhc"
+#endif /* CONFIG_SPACEX */
 #define ST_LSM6DSO_DEV_NAME	"lsm6dso"
 #define ST_ASM330LHH_DEV_NAME	"asm330lhh"
 #define ST_LSM6DSOX_DEV_NAME	"lsm6dsox"
@@ -32,6 +35,9 @@ enum st_lsm6dsx_hw_id {
 	ST_LSM6DSL_ID,
 	ST_LSM6DSM_ID,
 	ST_ISM330DLC_ID,
+#ifdef CONFIG_SPACEX
+	ST_ISM330DHC_ID,
+#endif /* CONFIG_SPACEX */
 	ST_LSM6DSO_ID,
 	ST_ASM330LHH_ID,
 	ST_LSM6DSOX_ID,
@@ -54,6 +60,24 @@ enum st_lsm6dsx_hw_id {
 					 * ST_LSM6DSX_TAGGED_SAMPLE_SIZE)
 #define ST_LSM6DSX_SHIFT_VAL(val, mask)	(((val) << __ffs(mask)) & (mask))
 
+#ifdef CONFIG_SPACEX
+#define ST_LSM6DSX_CHANNEL(chan_type, addr, mod, scan_idx)		\
+{									\
+	.type = chan_type,						\
+	.address = addr,						\
+	.modified = 1,							\
+	.channel2 = mod,						\
+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | BIT(IIO_CHAN_INFO_SCALE), \
+	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_SAMP_FREQ),	\
+	.scan_index = scan_idx,						\
+	.scan_type = {							\
+		.sign = 's',						\
+		.realbits = 16,						\
+		.storagebits = 16,					\
+		.endianness = IIO_LE,					\
+	},								\
+}
+#else
 #define ST_LSM6DSX_CHANNEL(chan_type, addr, mod, scan_idx)		\
 {									\
 	.type = chan_type,						\
@@ -71,6 +95,7 @@ enum st_lsm6dsx_hw_id {
 		.endianness = IIO_LE,					\
 	},								\
 }
+#endif
 
 struct st_lsm6dsx_reg {
 	u8 addr;

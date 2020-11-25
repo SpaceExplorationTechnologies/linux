@@ -79,12 +79,14 @@
  * @clk:		store the System Counter clock frequency, in Hz.
  * @refresh_base:	Virtual address of the watchdog refresh frame
  * @control_base:	Virtual address of the watchdog control frame
+ * @refresh_only:	Boolean indicating if the driver can access to control
  */
 struct sbsa_gwdt {
 	struct watchdog_device	wdd;
 	u32			clk;
 	void __iomem		*refresh_base;
 	void __iomem		*control_base;
+	bool			refresh_only;
 };
 
 #define DEFAULT_TIMEOUT		10 /* seconds */
@@ -121,6 +123,9 @@ static int sbsa_gwdt_set_timeout(struct watchdog_device *wdd,
 	struct sbsa_gwdt *gwdt = watchdog_get_drvdata(wdd);
 
 	wdd->timeout = timeout;
+
+	if (gwdt->refresh_only)
+		return 0;
 
 	if (action)
 		writel(gwdt->clk * timeout,
@@ -176,6 +181,9 @@ static int sbsa_gwdt_start(struct watchdog_device *wdd)
 {
 	struct sbsa_gwdt *gwdt = watchdog_get_drvdata(wdd);
 
+	if (gwdt->refresh_only)
+		return 0;
+
 	/* writing WCS will cause an explicit watchdog refresh */
 	writel(SBSA_GWDT_WCS_EN, gwdt->control_base + SBSA_GWDT_WCS);
 
@@ -185,6 +193,9 @@ static int sbsa_gwdt_start(struct watchdog_device *wdd)
 static int sbsa_gwdt_stop(struct watchdog_device *wdd)
 {
 	struct sbsa_gwdt *gwdt = watchdog_get_drvdata(wdd);
+
+	if (gwdt->refresh_only)
+		return 0;
 
 	/* Simply write 0 to WCS to clean WCS_EN bit */
 	writel(0, gwdt->control_base + SBSA_GWDT_WCS);
@@ -216,27 +227,44 @@ static const struct watchdog_ops sbsa_gwdt_ops = {
 	.get_timeleft	= sbsa_gwdt_get_timeleft,
 };
 
+static struct watchdog_ops sbsa_refresh_gwdt_ops = {
+	.owner		= THIS_MODULE,
+	/* start / stop kept since framework requires them */
+	.start		= sbsa_gwdt_start,
+	.stop		= sbsa_gwdt_stop,
+	.ping		= sbsa_gwdt_keepalive,
+};
+
 static int sbsa_gwdt_probe(struct platform_device *pdev)
 {
-	void __iomem *rf_base, *cf_base;
+	void __iomem *rf_base, *cf_base = NULL;
 	struct device *dev = &pdev->dev;
 	struct watchdog_device *wdd;
 	struct sbsa_gwdt *gwdt;
 	int ret, irq;
-	u32 status;
+	u32 status = 0;
 
 	gwdt = devm_kzalloc(dev, sizeof(*gwdt), GFP_KERNEL);
 	if (!gwdt)
 		return -ENOMEM;
 	platform_set_drvdata(pdev, gwdt);
 
-	cf_base = devm_platform_ioremap_resource(pdev, 0);
-	if (IS_ERR(cf_base))
-		return PTR_ERR(cf_base);
+	if (of_device_is_compatible(pdev->dev.of_node, "arm,sbsa-refresh-gwdt"))
+		gwdt->refresh_only = true;
 
-	rf_base = devm_platform_ioremap_resource(pdev, 1);
-	if (IS_ERR(rf_base))
-		return PTR_ERR(rf_base);
+	if (!gwdt->refresh_only) {
+		cf_base = devm_platform_ioremap_resource(pdev, 0);
+		if (IS_ERR(cf_base))
+			return PTR_ERR(cf_base);
+
+		rf_base = devm_platform_ioremap_resource(pdev, 1);
+		if (IS_ERR(rf_base))
+			return PTR_ERR(rf_base);
+	} else {
+		rf_base = devm_platform_ioremap_resource(pdev, 0);
+		if (IS_ERR(rf_base))
+			return PTR_ERR(rf_base);
+	}
 
 	/*
 	 * Get the frequency of system counter from the cp15 interface of ARM
@@ -250,17 +278,22 @@ static int sbsa_gwdt_probe(struct platform_device *pdev)
 	wdd = &gwdt->wdd;
 	wdd->parent = dev;
 	wdd->info = &sbsa_gwdt_info;
-	wdd->ops = &sbsa_gwdt_ops;
+	if (gwdt->refresh_only)
+		wdd->ops = &sbsa_refresh_gwdt_ops;
+	else
+		wdd->ops = &sbsa_gwdt_ops;
 	wdd->min_timeout = 1;
 	wdd->max_hw_heartbeat_ms = U32_MAX / gwdt->clk * 1000;
 	wdd->timeout = DEFAULT_TIMEOUT;
 	watchdog_set_drvdata(wdd, gwdt);
 	watchdog_set_nowayout(wdd, nowayout);
 
-	status = readl(cf_base + SBSA_GWDT_WCS);
-	if (status & SBSA_GWDT_WCS_WS1) {
-		dev_warn(dev, "System reset by WDT.\n");
-		wdd->bootstatus |= WDIOF_CARDRESET;
+	if (!gwdt->refresh_only) {
+		status = readl(cf_base + SBSA_GWDT_WCS);
+		if (status & SBSA_GWDT_WCS_WS1) {
+			dev_warn(dev, "System reset by WDT.\n");
+			wdd->bootstatus |= WDIOF_CARDRESET;
+		}
 	}
 	if (status & SBSA_GWDT_WCS_EN)
 		set_bit(WDOG_HW_RUNNING, &wdd->status);
@@ -306,9 +339,13 @@ static int sbsa_gwdt_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	dev_info(dev, "Initialized with %ds timeout @ %u Hz, action=%d.%s\n",
-		 wdd->timeout, gwdt->clk, action,
-		 status & SBSA_GWDT_WCS_EN ? " [enabled]" : "");
+	if (!gwdt->refresh_only) {
+		dev_info(dev, "Initialized with %ds timeout @ %u Hz, action=%d.%s\n",
+			 wdd->timeout, gwdt->clk, action,
+			 status & SBSA_GWDT_WCS_EN ? " [enabled]" : "");
+	} else {
+		dev_info(dev, "Initialized in refresh-only mode\n");
+	}
 
 	return 0;
 }
@@ -341,6 +378,7 @@ static const struct dev_pm_ops sbsa_gwdt_pm_ops = {
 
 static const struct of_device_id sbsa_gwdt_of_match[] = {
 	{ .compatible = "arm,sbsa-gwdt", },
+	{ .compatible = "arm,sbsa-refresh-gwdt", },
 	{},
 };
 MODULE_DEVICE_TABLE(of, sbsa_gwdt_of_match);

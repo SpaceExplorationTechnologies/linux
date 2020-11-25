@@ -16,5 +16,11 @@
 #define PHY_TYPE_USB2		3
 #define PHY_TYPE_USB3		4
 #define PHY_TYPE_UFS		5
+#define PHY_TYPE_SGMII		6
+#define PHY_TYPE_MDML		7
+
+#define PHY_MDML_FREQ_6Gbps 0
+#define PHY_MDML_FREQ_8Gbps	1
+#define PHY_MDML_FREQ_9p96Gbps	2
 
 #endif /* _DT_BINDINGS_PHY */

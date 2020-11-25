@@ -217,7 +217,12 @@ static void gem_ptp_init_tsu(struct macb *bp)
 	struct timespec64 ts;
 
 	/* 1. get current system time */
+#ifndef CONFIG_SPACEX
 	ts = ns_to_timespec64(ktime_to_ns(ktime_get_real()));
+#else /* !CONFIG_SPACEX */
+	/* We use ktime_to_timespec64(), which combines the two calls above. */
+	ts = ktime_to_timespec64(ktime_get_clocktai());
+#endif /* CONFIG_SPACEX */
 
 	/* 2. set ptp timer */
 	gem_tsu_set_time(&bp->ptp_clock_info, &ts);
@@ -307,7 +312,10 @@ int gem_ptp_txstamp(struct macb_queue *queue, struct sk_buff *skb,
 	if (CIRC_SPACE(head, tail, PTP_TS_BUFFER_SIZE) == 0)
 		return -ENOMEM;
 
+#ifndef CONFIG_SPACEX
+	/* BUG -- see Documentation/networking/timestamping.txt */
 	skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+#endif /* CONFIG_SPACEX */
 	desc_ptp = macb_ptp_desc(queue->bp, desc);
 	tx_timestamp = &queue->tx_timestamps[head];
 	tx_timestamp->skb = skb;

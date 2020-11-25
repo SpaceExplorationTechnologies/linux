@@ -1106,7 +1106,10 @@ PHONY += prepare archprepare
 archprepare: outputmakefile archheaders archscripts scripts include/config/kernel.release \
 	asm-generic $(version_h) $(autoksyms_h) include/generated/utsrelease.h
 
-prepare0: archprepare
+# needed to generate compile.h
+include init/Makefile
+
+prepare0: archprepare include/generated/compile.h
 	$(Q)$(MAKE) $(build)=scripts/mod
 	$(Q)$(MAKE) $(build)=.
 

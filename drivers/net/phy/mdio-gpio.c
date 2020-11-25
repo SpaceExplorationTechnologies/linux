@@ -29,7 +29,7 @@
 
 struct mdio_gpio_info {
 	struct mdiobb_ctrl ctrl;
-	struct gpio_desc *mdc, *mdio, *mdo;
+	struct gpio_desc *mdc, *mdio, *mdo, *mdoe;
 };
 
 static int mdio_gpio_get_data(struct device *dev,
@@ -45,6 +45,11 @@ static int mdio_gpio_get_data(struct device *dev,
 	if (IS_ERR(bitbang->mdio))
 		return PTR_ERR(bitbang->mdio);
 
+	bitbang->mdoe = devm_gpiod_get_index(dev, NULL, MDIO_GPIO_MDOE,
+					     GPIOD_OUT_LOW);
+	if (IS_ERR(bitbang->mdoe))
+		bitbang->mdoe = NULL;
+
 	bitbang->mdo = devm_gpiod_get_index_optional(dev, NULL, MDIO_GPIO_MDO,
 						     GPIOD_OUT_LOW);
 	return PTR_ERR_OR_ZERO(bitbang->mdo);
@@ -54,6 +59,10 @@ static void mdio_dir(struct mdiobb_ctrl *ctrl, int dir)
 {
 	struct mdio_gpio_info *bitbang =
 		container_of(ctrl, struct mdio_gpio_info, ctrl);
+
+	/* Input is zero, output is 1.  Enable for output, diable for input */
+	if (bitbang->mdoe)
+		gpiod_set_value_cansleep(bitbang->mdoe, !!dir);
 
 	if (bitbang->mdo) {
 		/* Separate output pin. Always set its value to high

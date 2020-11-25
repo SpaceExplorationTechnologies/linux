@@ -249,6 +249,11 @@ config MVME2500
 	help
 	  This option enables support for the Emerson/Artesyn MVME2500 board.
 
+config XPS_INTC
+	bool "Xilinx Interrupt Controller Core"
+	help
+	  This option enables support for the Xilinx interrupt controller.
+
 endif # PPC32
 
 config PPC_QEMU_E500

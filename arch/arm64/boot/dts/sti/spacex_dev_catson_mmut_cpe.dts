@@ -1,0 +1,69 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_cut2.dtsi"
+#include "spacex_dev_catson_mmut.dtsi"
+
+/ {
+	model = "spacex_satellite_user_terminal_dev";
+
+	chosen {
+		ethprime = "pp_l3_gmac";
+	};
+
+	soc {
+		ethernet1: dwmac@16800000 {
+			disable-pcs;
+
+			/delete-property/ fixed-link;
+
+			/* Enable and configure MDIO */
+			pinctrl-0 = <&pinctrl_mdio1_2pin>;
+			pinctrl-names = "default";
+			snps,phy-bus-name = "stmmac";
+			snps,phy-bus-id = <0>;
+			snps,phy-addr = <0x00>;
+
+			/* Configure PHY for SGMII */
+			phy-mode = "sgmii";
+		};
+
+		/*
+		 * ePHY LEDs.
+		 */
+		ephy: ephy@16702100 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&ephy_led_alt>; /* PIO30 0 and 4 */
+		};
+
+		/*
+		 * Configure serial to only use tx and rx lines.
+		 */
+		serial0: serial@8850000 {
+			pinctrl-0 = <&pinctrl_serial0_txrx>;
+		};
+
+		serial1: serial@8860000 {
+			pinctrl-0 = <&pinctrl_serial1_txrx>;
+		};
+
+		/*
+		 * The telemetry_adc exposed here does not represent physically useful
+		 * sensor data. It's only included here to be a better match with the
+		 * real UT platform.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			status = "okay";
+
+			vref-external = <1800>; /* 1.8v external reference */
+			use-external = <0 0 0 0 0 0 0 0>; /* Internal mux */
+		};
+	};
+};

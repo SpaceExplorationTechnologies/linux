@@ -199,6 +199,11 @@ static void features_init(void)
 
 void phy_device_free(struct phy_device *phydev)
 {
+#ifdef CONFIG_SPACEX
+	kthread_flush_worker(&phydev->phy_state_worker);
+	kthread_stop(phydev->phy_state_worker_task);
+#endif /* CONFIG_SPACEX */
+
 	put_device(&phydev->mdio.dev);
 }
 EXPORT_SYMBOL(phy_device_free);
@@ -577,6 +582,23 @@ static int phy_request_driver_module(struct phy_device *dev, u32 phy_id)
 	return 0;
 }
 
+#ifdef CONFIG_SPACEX
+/**
+ * run_phy_state_machine() - queues the phy_state_machine on the PHY kthread
+ *
+ * This is run from a timer.
+ *
+ * @t:  timer_list structure.
+ */
+static void run_phy_state_machine(struct timer_list *t)
+{
+	struct phy_device *phydev = from_timer(phydev, t, state_queue_timer);
+
+	/* This returns false if the kthread_work is already queued. */
+	kthread_queue_work(&phydev->phy_state_worker, &phydev->state_queue);
+}
+#endif /* CONFIG_SPACEX */
+
 struct phy_device *phy_device_create(struct mii_bus *bus, int addr, u32 phy_id,
 				     bool is_c45,
 				     struct phy_c45_device_ids *c45_ids)
@@ -584,6 +606,10 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, u32 phy_id,
 	struct phy_device *dev;
 	struct mdio_device *mdiodev;
 	int ret = 0;
+#ifdef CONFIG_SPACEX
+	struct task_struct *kthread_ptr;
+	const char *dev_name_ptr;
+#endif /* CONFIG_SPACEX */
 
 	/* We allocate the device, and initialize the default values */
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -620,7 +646,25 @@ struct phy_device *phy_device_create(struct mii_bus *bus, int addr, u32 phy_id,
 	dev->state = PHY_DOWN;
 
 	mutex_init(&dev->lock);
+#ifndef CONFIG_SPACEX
 	INIT_DELAYED_WORK(&dev->state_queue, phy_state_machine);
+#else /* !CONFIG_SPACEX */
+	dev_name_ptr = phydev_name(dev);
+	/* If the device name starts with "mdio@", skip that part. */
+	if (!strncmp(dev_name_ptr, "mdio@", 5))
+		dev_name_ptr += 5;
+	kthread_init_worker(&dev->phy_state_worker);
+	kthread_ptr = kthread_run(kthread_worker_fn, &dev->phy_state_worker,
+				  "phy/%s", dev_name_ptr);
+	if (IS_ERR(kthread_ptr)) {
+		phydev_err(dev, "Could not create PHY worker task.\n");
+		kfree(dev);
+		return (void *)kthread_ptr;
+	}
+	dev->phy_state_worker_task = kthread_ptr;
+	kthread_init_work(&dev->state_queue, phy_state_machine);
+	timer_setup(&dev->state_queue_timer, run_phy_state_machine, 0);
+#endif /* CONFIG_SPACEX */
 
 	/* Request the appropriate module unconditionally; don't
 	 * bother trying to do so only if it isn't already loaded,
@@ -831,6 +875,15 @@ struct phy_device *get_phy_device(struct mii_bus *bus, int addr, bool is_c45)
 	/* If the phy_id is mostly Fs, there is no device there */
 	if ((phy_id & 0x1fffffff) == 0x1fffffff)
 		return ERR_PTR(-ENODEV);
+
+#ifdef CONFIG_SPACEX
+	/*
+	 * If the phy_id is all 0s, there is no device there.  This can happen
+	 * if the MDIO bus does not actually exist.
+	 */
+	if (!phy_id)
+		return ERR_PTR(-ENODEV);
+#endif
 
 	return phy_device_create(bus, addr, phy_id, is_c45, &c45_ids);
 }
@@ -2281,7 +2334,12 @@ static int phy_remove(struct device *dev)
 {
 	struct phy_device *phydev = to_phy_device(dev);
 
+#ifndef CONFIG_SPACEX
 	cancel_delayed_work_sync(&phydev->state_queue);
+#else /* !CONFIG_SPACEX */
+	del_timer_sync(&phydev->state_queue_timer);
+	kthread_flush_work(&phydev->state_queue);
+#endif /* CONFIG_SPACEX */
 
 	mutex_lock(&phydev->lock);
 	phydev->state = PHY_DOWN;

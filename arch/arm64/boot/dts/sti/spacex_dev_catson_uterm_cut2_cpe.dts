@@ -1,0 +1,97 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_cut2.dtsi"
+#include "spacex_dev_catson_utdev_rf.dtsi"
+
+/ {
+	model = "spacex_satellite_user_terminal_dev";
+
+	gpios {
+		/*
+		 * IO for compatibility with the real UT. These are NC on the
+		 * utdev board.
+		 */
+		ant_power     = <&pio12 0 0>;
+		cady_power    = <&pio12 1 0>;
+		cady_v1p8_up  = <&pio12 4 0>;
+
+		/*
+		 * Since spi2 is already taken up by the up/dn converters, use the
+		 * default spi2 pins as spares.
+		 */
+		cady_v2p2_up  = <&pio21 0 0>;
+		dbf_reset     = <&pio21 1 0>;
+		gps_boot      = <&pio21 2 0>;
+
+		self_reset    = <&pio11 4 0>;
+		wifi_reset    = <&pio11 5 0>;
+
+		/* These IO actually exist on the utdev board. */
+		gps_reset     = <&pio11 7 0>;
+	};
+
+	chosen {
+		ethprime = "pp_l3_gmac";
+	};
+
+	soc {
+		ethernet1: dwmac@16800000 {
+			disable-pcs;
+
+			/delete-property/ fixed-link;
+
+			/* Enable and configure MDIO */
+			pinctrl-0 = <&pinctrl_mdio1_2pin>;
+			pinctrl-names = "default";
+			snps,phy-bus-name = "stmmac";
+			snps,phy-bus-id = <0>;
+			snps,phy-addr = <0x00>;
+
+			/* Configure PHY for SGMII */
+			phy-mode = "sgmii";
+		};
+
+		/*
+		 * ePHY LEDs.
+		 */
+		ephy: ephy@16702100 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&ephy_led_alt>;
+		};
+
+		/*
+		 * The telemetry_adc exposed here does not represent physically useful
+		 * sensor data. It's only included here to be a better match with the
+		 * real UT platform. The PIO selected for muxing here are set to
+		 * unconnected Catson pins so there's no risk of double-driving pins.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			status = "okay";
+
+			vref-external = <1800>; /* 1.8v external reference */
+			use-external = <0 0 0 1 1 0 0 0>; /* Chan 3-4 use external */
+
+			/* These are unused on utdev. */
+			mux-gpio = <&pio12 5 0>,
+					<&pio12 6 0>,
+					<&pio12 7 0>;
+
+			mux@3 {
+				input-channel = <3>;
+				vchan-count = <8>;
+			};
+			mux@4 {
+				input-channel = <4>;
+				vchan-count = <8>;
+			};
+		};
+	};
+};

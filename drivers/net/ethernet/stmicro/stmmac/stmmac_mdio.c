@@ -213,6 +213,7 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 	struct stmmac_priv *priv = netdev_priv(ndev);
 	unsigned int mii_address = priv->hw->mii.addr;
 	unsigned int mii_data = priv->hw->mii.data;
+	int repeat = priv->plat->mdio_bus_data->write_repeat ? 2 : 1;
 	u32 value = MII_BUSY;
 	int data = phydata;
 	u32 v;
@@ -245,12 +246,19 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 		return -EBUSY;
 
 	/* Set the MII address register to write */
-	writel(data, priv->ioaddr + mii_data);
-	writel(value, priv->ioaddr + mii_address);
+	while (repeat) {
+		writel(data, priv->ioaddr + mii_data);
+		writel(value, priv->ioaddr + mii_address);
 
-	/* Wait until any existing MII operation is complete */
-	return readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
-				  100, 10000);
+		/* Wait until any existing MII operation is complete */
+		if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
+				       100, 10000))
+			return -EBUSY;
+
+		repeat--;
+	}
+
+	return 0;
 }
 
 /**
@@ -328,6 +336,14 @@ int stmmac_mdio_register(struct net_device *ndev)
 
 	if (mdio_bus_data->irqs)
 		memcpy(new_bus->irq, mdio_bus_data->irqs, sizeof(new_bus->irq));
+
+#ifdef CONFIG_OF
+	if (priv->device->of_node) {
+		struct device_node *np = priv->device->of_node;
+		mdio_bus_data->write_repeat = of_property_read_bool(np,
+					"st,mdio-write-repeat");
+	}
+#endif
 
 	new_bus->name = "stmmac";
 

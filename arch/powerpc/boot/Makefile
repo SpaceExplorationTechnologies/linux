@@ -28,6 +28,9 @@ else
     BOOTAR := $(AR)
 endif
 
+# SpaceX: LZMA decompression is done in U-Boot.
+compress-$(CONFIG_KERNEL_LZMA) := CONFIG_KERNEL_NONE
+
 BOOTCFLAGS    := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		 -fno-strict-aliasing -O2 -msoft-float -mno-altivec -mno-vsx \
 		 -pipe -fomit-frame-pointer -fno-builtin -fPIC -nostdinc \
@@ -89,7 +92,7 @@ $(obj)/virtex405-head.o: BOOTAFLAGS += -mcpu=405
 # these need to be seperate variables because they are copied out of different
 # directories in the kernel tree. Sure you COULd merge them, but it's a
 # cure-is-worse-than-disease situation.
-zlib-decomp-$(CONFIG_KERNEL_GZIP) := decompress_inflate.c
+zlib-decomp-$(CONFIG_KERNEL_GZIP) := decompress.c decompress_inflate.c
 zlib-$(CONFIG_KERNEL_GZIP) := inffast.c inflate.c inftrees.c
 zlibheader-$(CONFIG_KERNEL_GZIP) := inffast.h inffixed.h inflate.h inftrees.h infutil.h
 zliblinuxheader-$(CONFIG_KERNEL_GZIP) := zlib.h zconf.h zutil.h
@@ -113,7 +116,7 @@ $(addprefix $(obj)/,$(libfdt) libfdt-wrapper.o simpleboot.o epapr.o opal.o \
 	treeboot-akebono.o treeboot-currituck.o treeboot-iss4xx.o): \
 	$(addprefix $(obj)/,$(libfdtheader))
 
-src-wlib-y := string.S crt0.S stdio.c decompress.c main.c \
+src-wlib-y := string.S crt0.S crtsavres.S stdio.c main.c \
 		$(libfdt) libfdt-wrapper.c \
 		ns16550.c serial.c simple_alloc.c div64.S util.S \
 		elf_util.c $(zlib-y) devtree.c stdlib.c \
@@ -455,6 +458,7 @@ clean-files += $(image-) $(initrd-) cuImage.* dtbImage.* treeImage.* \
 clean-kernel-base := vmlinux.strip vmlinux.bin
 clean-kernel := $(addsuffix .gz,$(clean-kernel-base))
 clean-kernel += $(addsuffix .xz,$(clean-kernel-base))
+clean-kernel += $(addsuffix .lzma,$(clean-kernel-base))
 # If not absolute clean-files are relative to $(obj).
 clean-files += $(addprefix $(objtree)/, $(clean-kernel))
 

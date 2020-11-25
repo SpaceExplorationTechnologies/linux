@@ -416,7 +416,7 @@ static void ipmr_free_table(struct mr_table *mrt)
 }
 
 /* Service routines creating virtual interfaces: DVMRP tunnels and PIMREG */
-
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
 {
 	struct net *net = dev_net(dev);
@@ -447,6 +447,7 @@ static void ipmr_del_tunnel(struct net_device *dev, struct vifctl *v)
 		}
 	}
 }
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 
 /* Initialize ipmr pimreg/tunnel in_device */
 static bool ipmr_init_vif_indev(const struct net_device *dev)
@@ -705,7 +706,9 @@ static int vif_delete(struct mr_table *mrt, int vifi, int notify,
 
 	write_unlock_bh(&mrt_lock);
 
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 	dev_set_allmulti(dev, -1);
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 
 	in_dev = __in_dev_get_rtnl(dev);
 	if (in_dev) {
@@ -854,23 +857,27 @@ static int vif_add(struct net *net, struct mr_table *mrt,
 		dev = ipmr_reg_vif(net, mrt);
 		if (!dev)
 			return -ENOBUFS;
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 		err = dev_set_allmulti(dev, 1);
 		if (err) {
 			unregister_netdevice(dev);
 			dev_put(dev);
 			return err;
 		}
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 		break;
 	case VIFF_TUNNEL:
 		dev = ipmr_new_tunnel(net, vifc);
 		if (!dev)
 			return -ENOBUFS;
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 		err = dev_set_allmulti(dev, 1);
 		if (err) {
 			ipmr_del_tunnel(dev, vifc);
 			dev_put(dev);
 			return err;
 		}
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 		break;
 	case VIFF_USE_IFINDEX:
 	case 0:
@@ -885,11 +892,13 @@ static int vif_add(struct net *net, struct mr_table *mrt,
 		}
 		if (!dev)
 			return -EADDRNOTAVAIL;
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 		err = dev_set_allmulti(dev, 1);
 		if (err) {
 			dev_put(dev);
 			return err;
 		}
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 		break;
 	default:
 		return -EINVAL;

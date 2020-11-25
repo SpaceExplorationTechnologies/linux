@@ -26,7 +26,7 @@
  *   - Gyroscope supported full-scale [dps]: +-125/+-245/+-500/+-1000/+-2000
  *   - FIFO size: 4KB
  *
- * - LSM6DSO/LSM6DSOX/ASM330LHH/LSM6DSR/ISM330DHCX:
+ * - LSM6DSO/LSM6DSOX/ASM330LHH/LSM6DSR/ISM330DHCX/ISM330DHC:
  *   - Accelerometer/Gyroscope supported ODR [Hz]: 13, 26, 52, 104, 208, 416
  *   - Accelerometer supported full-scale [g]: +-2/+-4/+-8/+-16
  *   - Gyroscope supported full-scale [dps]: +-125/+-245/+-500/+-1000/+-2000
@@ -766,6 +766,10 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.hw_id = ST_ISM330DHCX_ID,
 				.name = ST_ISM330DHCX_DEV_NAME,
 			},
+			{
+				.hw_id = ST_ISM330DHC_ID,
+				.name = ST_ISM330DHC_DEV_NAME,
+			},
 		},
 		.channels = {
 			[ST_LSM6DSX_ID_ACC] = {
@@ -1442,6 +1446,12 @@ static struct iio_dev *st_lsm6dsx_alloc_iiodev(struct st_lsm6dsx_hw *hw,
 {
 	struct st_lsm6dsx_sensor *sensor;
 	struct iio_dev *iio_dev;
+
+#ifdef CONFIG_SPACEX
+	if (WARN_ON(id >= ST_LSM6DSX_ODR_LIST_SIZE) ||
+	    WARN_ON(id >= ST_LSM6DSX_FS_LIST_SIZE))
+		return NULL;
+#endif /* CONFIG_SPACEX */
 
 	iio_dev = devm_iio_device_alloc(hw->dev, sizeof(*sensor));
 	if (!iio_dev)

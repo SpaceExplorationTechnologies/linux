@@ -26,6 +26,9 @@
 #include <linux/platform_data/macb.h>
 #include <linux/platform_device.h>
 #include <linux/phy.h>
+#ifdef CONFIG_SPACEX
+#include <linux/phy_fixed.h>
+#endif
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
@@ -502,6 +505,30 @@ static void macb_handle_link_change(struct net_device *dev)
 	}
 }
 
+#ifdef CONFIG_SPACEX
+/**
+ * link_updated_fixed() - fixed-link link state callback.
+ * @dev		Pointer to the &struct net_device for the interface whose
+ *		link state is being interrogated.
+ * @status	Pointer to a &struct fixed_phy_status used to pass interface
+ *		link state up to the PHY abstraction layer.
+ *
+ * This function is called from the fixed-link "virtual" PHY driver
+ * whenever the PHY subsystem polls for the link status (~1 Hz).
+ *
+ * Return: success (does not fail)
+ */
+static int link_update_fixed(struct net_device *dev,
+			     struct fixed_phy_status *status)
+{
+	struct macb *bp = netdev_priv(dev);
+
+	status->link = macb_readl(bp, NSR) & MACB_BIT(NSR_LINK);
+
+	return 0;
+}
+#endif /* CONFIG_SPACEX */
+
 /* based on au1000_eth. c*/
 static int macb_mii_probe(struct net_device *dev)
 {
@@ -608,6 +635,10 @@ static int macb_mii_init(struct macb *bp)
 				"broken fixed-link specification %pOF\n", np);
 			goto err_out_free_mdiobus;
 		}
+
+#ifdef CONFIG_SPACEX
+		fixed_phy_set_link_update(bp->dev->phydev, link_update_fixed);
+#endif
 
 		err = mdiobus_register(bp->mii_bus);
 	} else {
@@ -923,7 +954,9 @@ static void gem_rx_refill(struct macb_queue *queue)
 		/* Make hw descriptor updates visible to CPU */
 		rmb();
 
+#ifndef CONFIG_SPACEX
 		queue->rx_prepared_head++;
+#endif
 		desc = macb_rx_desc(queue, entry);
 
 		if (!queue->rx_skbuff[entry]) {
@@ -962,6 +995,9 @@ static void gem_rx_refill(struct macb_queue *queue)
 			dma_wmb();
 			desc->addr &= ~MACB_BIT(RX_USED);
 		}
+#ifdef CONFIG_SPACEX
+		queue->rx_prepared_head++;
+#endif
 	}
 
 	/* Make descriptor updates visible to hardware */
@@ -1279,15 +1315,24 @@ static int macb_poll(struct napi_struct *napi, int budget)
 	if (work_done < budget) {
 		napi_complete_done(napi, work_done);
 
-		/* Packets received while interrupts were disabled */
+		spin_lock_irq(&bp->lock);
+		/* Interrupts must be enabled before checking the status
+		 * because otherwise, a packet that arrives after checking the
+		 * status but before interrupts are enabled would not cause an
+		 * interrupt. (See "rotting packet" in the NAPI documentation.)
+		 */
+		queue_writel(queue, IER, bp->rx_intr_mask);
+		/* Prevent reordering of the interrupt enable and status read. */
+		mb();
 		status = macb_readl(bp, RSR);
-		if (status) {
+		if (status && napi_schedule_prep(napi)) {
+			/* Packets were received while interrupts were disabled */
+			macb_writel(bp, IDR, bp->rx_intr_mask);
 			if (bp->caps & MACB_CAPS_ISR_CLEAR_ON_WRITE)
 				queue_writel(queue, ISR, MACB_BIT(RCOMP));
-			napi_reschedule(napi);
-		} else {
-			queue_writel(queue, IER, bp->rx_intr_mask);
+			__napi_schedule(napi);
 		}
+		spin_unlock_irq(&bp->lock);
 	}
 
 	/* TODO: Handle errors */
@@ -1844,6 +1889,13 @@ static netdev_tx_t macb_start_xmit(struct sk_buff *skb, struct net_device *dev)
 			   queue->tx_head, queue->tx_tail);
 		return NETDEV_TX_BUSY;
 	}
+
+
+#ifdef CONFIG_SPACEX
+	/* See Documentation/networking/timestamping.txt */
+	if (unlikely(skb_shinfo(skb)->tx_flags & SKBTX_HW_TSTAMP))
+		skb_shinfo(skb)->tx_flags |= SKBTX_IN_PROGRESS;
+#endif /* CONFIG_SPACEX */
 
 	/* Map socket buffer for DMA transfer */
 	if (!macb_tx_map(bp, queue, skb, hdrlen)) {
@@ -2409,6 +2461,9 @@ static int macb_open(struct net_device *dev)
 	struct macb_queue *queue;
 	unsigned int q;
 	int err;
+#ifdef CONFIG_SPACEX
+	unsigned int i;
+#endif /* CONFIG_SPACEX */
 
 	netdev_dbg(bp->dev, "open\n");
 
@@ -2424,6 +2479,27 @@ static int macb_open(struct net_device *dev)
 		err = -EAGAIN;
 		goto pm_exit;
 	}
+
+#ifdef CONFIG_SPACEX
+	for (i = 0; i < MACB_MAX_QUEUES; i++) {
+		queue = &bp->queues[i];
+		if (queue->irq < 0)
+			continue;
+
+		err = request_irq(queue->irq, macb_interrupt, IRQF_SHARED,
+				  dev->name, queue);
+		if (err) {
+			netdev_err(dev, "Unable to request IRQ %d (error %d)\n",
+				   queue->irq, err);
+			while (i-- > 0) {
+				queue = &bp->queues[i];
+				if (queue->irq >= 0)
+					free_irq(queue->irq, queue);
+			}
+			return err;
+		}
+	}
+#endif /* CONFIG_SPACEX */
 
 	/* RX buffers initialization */
 	macb_init_rx_buffer_size(bp, bufsz);
@@ -2463,6 +2539,9 @@ static int macb_close(struct net_device *dev)
 	struct macb_queue *queue;
 	unsigned long flags;
 	unsigned int q;
+#ifdef CONFIG_SPACEX
+	unsigned int i;
+#endif /* CONFIG_SPACEX */
 
 	netif_tx_stop_all_queues(dev);
 
@@ -2478,6 +2557,16 @@ static int macb_close(struct net_device *dev)
 	spin_unlock_irqrestore(&bp->lock, flags);
 
 	macb_free_consistent(bp);
+
+#ifdef CONFIG_SPACEX
+	for (i = 0; i < MACB_MAX_QUEUES; i++) {
+		queue = &bp->queues[i];
+		if (queue->irq < 0)
+			continue;
+
+		free_irq(queue->irq, queue);
+	}
+#endif /* CONFIG_SPACEX */
 
 	if (bp->ptp_info)
 		bp->ptp_info->ptp_remove(dev);
@@ -3472,7 +3561,9 @@ static int macb_init(struct platform_device *pdev)
 	unsigned int hw_q, q;
 	struct macb *bp = netdev_priv(dev);
 	struct macb_queue *queue;
+#ifndef CONFIG_SPACEX
 	int err;
+#endif /* !CONFIG_SPACEX */
 	u32 val, reg;
 
 	bp->tx_ring_size = DEFAULT_TX_RING_SIZE;
@@ -3525,6 +3616,7 @@ static int macb_init(struct platform_device *pdev)
 		 * hardware queue mask.
 		 */
 		queue->irq = platform_get_irq(pdev, q);
+#ifndef CONFIG_SPACEX
 		err = devm_request_irq(&pdev->dev, queue->irq, macb_interrupt,
 				       IRQF_SHARED, dev->name, queue);
 		if (err) {
@@ -3533,10 +3625,16 @@ static int macb_init(struct platform_device *pdev)
 				queue->irq, err);
 			return err;
 		}
+#endif /* !CONFIG_SPACEX */
 
 		INIT_WORK(&queue->tx_error_task, macb_tx_error_task);
 		q++;
 	}
+
+#ifdef CONFIG_SPACEX
+	for (; q < MACB_MAX_QUEUES; q++)
+		bp->queues[q].irq = -1;
+#endif /* CONFIG_SPACEX */
 
 	dev->netdev_ops = &macb_netdev_ops;
 
@@ -4223,7 +4321,18 @@ static int macb_probe(struct platform_device *pdev)
 	native_io = hw_is_native_io(mem);
 
 	macb_probe_queues(mem, native_io, &queue_mask, &num_queues);
+#ifndef CONFIG_SPACEX
 	dev = alloc_etherdev_mq(sizeof(*bp), num_queues);
+#else /* !CONFIG_SPACEX */
+	/* There is a race condition that appears to cause a missed TSTART when
+	 * frames are sent simultaneously on both GEM queues. This causes a
+	 * packet in one of the queues to be delayed until TSTART is later
+	 * re-triggered by a subsequent packet send. Work around this by
+	 * exposing only one queue to the NAPI layer, so the second queue will
+	 * not be used.
+	 */
+	dev = alloc_etherdev_mq(sizeof(*bp), 1);
+#endif /* CONFIG_SPACEX */
 	if (!dev) {
 		err = -ENOMEM;
 		goto err_disable_clocks;
@@ -4388,6 +4497,14 @@ static int macb_remove(struct platform_device *pdev)
 
 	if (dev) {
 		bp = netdev_priv(dev);
+#ifdef CONFIG_SPACEX
+		/* Unregister the fixed-link update callback prior to
+		 * calling phy_disconnect().
+		 */
+		if (bp->phy_node)
+			fixed_phy_set_link_update(dev->phydev, NULL);
+#endif /* CONFIG_SPACEX */
+
 		if (dev->phydev)
 			phy_disconnect(dev->phydev);
 		mdiobus_unregister(bp->mii_bus);

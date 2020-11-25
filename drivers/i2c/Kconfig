@@ -145,6 +145,14 @@ config I2C_DEBUG_BUS
 	  a problem with I2C support and want to see more of what is going
 	  on.
 
+config I2C_DISABLE_ADDRESS_CHECK
+	bool "I2C disable address validity checking"
+	help
+	  Say Y here if you want to disable I2C address validity checking.
+	  This allows communicating with devices that have an address on
+	  0x00 - the general call address, which would normally not be
+	  allowed.
+
 endif # I2C
 
 endmenu

@@ -379,6 +379,8 @@ static u64 syslog_seq;
 static size_t syslog_partial;
 static bool syslog_time;
 
+static DEFINE_SPINLOCK(kmsg_dump_lock);
+
 /* the next printk record to read after the last 'clear' command */
 static u64 clear_seq;
 
@@ -2867,7 +2869,6 @@ module_param_named(always_kmsg_dump, always_kmsg_dump, bool, S_IRUGO | S_IWUSR);
  */
 void kmsg_dump(enum kmsg_dump_reason reason)
 {
-	struct kmsg_dumper dumper_local;
 	struct kmsg_dumper *dumper;
 
 	if ((reason > KMSG_DUMP_OOPS) && !always_kmsg_dump)
@@ -2878,18 +2879,16 @@ void kmsg_dump(enum kmsg_dump_reason reason)
 		if (dumper->max_reason && reason > dumper->max_reason)
 			continue;
 
-		/*
-		 * use a local copy to avoid modifying the
-		 * iterator used by any other cpus/contexts
-		 */
-		memcpy(&dumper_local, dumper, sizeof(dumper_local));
-
 		/* initialize iterator with data about the stored records */
-		dumper_local.active = true;
-		kmsg_dump_rewind(&dumper_local);
+		dumper->active = true;
+
+		kmsg_dump_rewind(dumper);
 
 		/* invoke dumper which will iterate over records */
-		dumper_local.dump(&dumper_local, reason);
+		dumper->dump(dumper, reason);
+
+		/* reset iterator */
+		dumper->active = false;
 	}
 	rcu_read_unlock();
 }
@@ -3000,8 +2999,11 @@ bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
 			char *line, size_t size, size_t *len)
 {
 	bool ret;
+	unsigned long flags;
 
+	spin_lock_irqsave(&kmsg_dump_lock, flags);
 	ret = kmsg_dump_get_line_nolock(dumper, syslog, line, size, len);
+	spin_unlock_irqrestore(&kmsg_dump_lock, flags);
 
 	return ret;
 }
@@ -3153,7 +3155,11 @@ void kmsg_dump_rewind_nolock(struct kmsg_dumper *dumper)
  */
 void kmsg_dump_rewind(struct kmsg_dumper *dumper)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&kmsg_dump_lock, flags);
 	kmsg_dump_rewind_nolock(dumper);
+	spin_unlock_irqrestore(&kmsg_dump_lock, flags);
 }
 EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
 

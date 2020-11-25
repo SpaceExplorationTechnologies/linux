@@ -23,7 +23,11 @@
 #include <linux/ethtool.h>
 #include <linux/phy.h>
 #include <linux/phy_led_triggers.h>
+#ifndef CONFIG_SPACEX
 #include <linux/workqueue.h>
+#else /* !CONFIG_SPACEX */
+#include <linux/kthread.h>
+#endif /* CONFIG_SPACEX */
 #include <linux/mdio.h>
 #include <linux/io.h>
 #include <linux/uaccess.h>
@@ -493,8 +497,12 @@ EXPORT_SYMBOL(phy_mii_ioctl);
 
 void phy_queue_state_machine(struct phy_device *phydev, unsigned long jiffies)
 {
+#ifndef CONFIG_SPACEX
 	mod_delayed_work(system_power_efficient_wq, &phydev->state_queue,
 			 jiffies);
+#else /* !CONFIG_SPACEX */
+	mod_timer(&phydev->state_queue_timer, jiffies + (PHY_STATE_TIME * HZ));
+#endif /* CONFIG_SPACEX */
 }
 EXPORT_SYMBOL(phy_queue_state_machine);
 
@@ -694,7 +702,12 @@ EXPORT_SYMBOL_GPL(phy_start_machine);
  */
 void phy_stop_machine(struct phy_device *phydev)
 {
+#ifndef CONFIG_SPACEX
 	cancel_delayed_work_sync(&phydev->state_queue);
+#else /* !CONFIG_SPACEX */
+	del_timer_sync(&phydev->state_queue_timer);
+	kthread_flush_work(&phydev->state_queue);
+#endif /* CONFIG_SPACEX */
 
 	mutex_lock(&phydev->lock);
 	if (phy_is_started(phydev))
@@ -846,7 +859,11 @@ void phy_stop(struct phy_device *phydev)
 
 	mutex_unlock(&phydev->lock);
 
+#ifndef CONFIG_SPACEX
 	phy_state_machine(&phydev->state_queue.work);
+#else
+	
+#endif
 	phy_stop_machine(phydev);
 
 	/* Cannot call flush_scheduled_work() here as desired because
@@ -891,11 +908,18 @@ EXPORT_SYMBOL(phy_start);
  * phy_state_machine - Handle the state machine
  * @work: work_struct that describes the work to be done
  */
+#ifndef CONFIG_SPACEX
 void phy_state_machine(struct work_struct *work)
 {
 	struct delayed_work *dwork = to_delayed_work(work);
 	struct phy_device *phydev =
 			container_of(dwork, struct phy_device, state_queue);
+#else /* !CONFIG_SPACEX */
+void phy_state_machine(struct kthread_work *work)
+{
+	struct phy_device *phydev =
+			container_of(work, struct phy_device, state_queue);
+#endif /* CONFIG_SPACEX */
 	bool needs_aneg = false, do_suspend = false;
 	enum phy_state old_state;
 	int err = 0;

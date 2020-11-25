@@ -18,10 +18,15 @@ struct ptp_clock_request {
 		PTP_CLK_REQ_EXTTS,
 		PTP_CLK_REQ_PEROUT,
 		PTP_CLK_REQ_PPS,
+		PTP_CLK_REQ_ALARM,
 	} type;
 	union {
 		struct ptp_extts_request extts;
 		struct ptp_perout_request perout;
+		struct ptp_alarm_request {
+			u64 time;
+			int index;
+		} alarm;
 	};
 };
 

@@ -127,6 +127,7 @@
 #define SR_BP0			BIT(2)	/* Block protect 0 */
 #define SR_BP1			BIT(3)	/* Block protect 1 */
 #define SR_BP2			BIT(4)	/* Block protect 2 */
+#define SR_BP3			BIT(5)  /* Block protect 3 */
 #define SR_TB			BIT(5)	/* Top/Bottom protect */
 #define SR_SRWD			BIT(7)	/* SR write protect */
 /* Spansion/Cypress specific status bits */
@@ -243,6 +244,10 @@ enum spi_nor_option_flags {
 	SNOR_F_4B_OPCODES	= BIT(6),
 	SNOR_F_HAS_4BAIT	= BIT(7),
 	SNOR_F_HAS_LOCK		= BIT(8),
+	SNOR_F_USE_DUAL_CHIP	= BIT(9),
+#ifdef CONFIG_SPACEX
+	SNOR_F_USE_STRIPE	= BIT(10),
+#endif /* CONFIG_SPACEX */
 };
 
 /**
@@ -545,6 +550,9 @@ struct flash_info;
  * @read_dummy:		the dummy needed by the read operation
  * @program_opcode:	the program opcode
  * @sst_write_second:	used by the SST write operation
+ * @can_panic_write:	the driver supports avoiding sleeps in the write path
+ *			if oops_in_progress is true; only set this if the
+ *			spi_master supports it as well
  * @flags:		flag options for the current SPI-NOR (SNOR_F_*)
  * @read_proto:		the SPI protocol for read operations
  * @write_proto:	the SPI protocol for write operations
@@ -578,6 +586,9 @@ struct spi_nor {
 	const struct flash_info	*info;
 	u32			page_size;
 	u8			addr_width;
+#ifdef CONFIG_SPACEX
+	u8			n_dies;
+#endif /* CONFIG_SPACEX */
 	u8			erase_opcode;
 	u8			read_opcode;
 	u8			read_dummy;
@@ -586,6 +597,7 @@ struct spi_nor {
 	enum spi_nor_protocol	write_proto;
 	enum spi_nor_protocol	reg_proto;
 	bool			sst_write_second;
+	bool			can_panic_write;
 	u32			flags;
 
 	int (*prepare)(struct spi_nor *nor, enum spi_nor_ops ops);

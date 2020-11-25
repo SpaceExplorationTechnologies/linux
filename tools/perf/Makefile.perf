@@ -34,6 +34,12 @@ include ../scripts/utilities.mak
 # Define LDFLAGS=-static to build a static binary.
 #
 # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+
+# SPACEX change: MUSL defines the non-standard sched_getcpu function, but
+# doesn't provide a way to test for it. Perf also defines it for non-glibc
+# toolchains, which results in a warning.
+EXTRA_CFLAGS = -w
+
 #
 # Define EXCLUDE_EXTLIBS=-lmylib to exclude libmylib from the auto-generated
 # EXTLIBS.

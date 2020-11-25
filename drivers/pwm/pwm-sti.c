@@ -224,7 +224,11 @@ static int sti_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 		 * PWM pulse = (max_pwm_count + 1) local cycles,
 		 * that is continuous pulse: signal never goes low.
 		 */
+#ifndef CONFIG_SPACEX
 		value = cdata->max_pwm_cnt * duty_ns / period_ns;
+#else /* !CONFIG_SPACEX */
+		value = (u64)cdata->max_pwm_cnt * duty_ns / period_ns;
+#endif /* CONFIG_SPACEX */
 
 		ret = regmap_write(pc->regmap, PWM_OUT_VAL(pwm->hwpwm), value);
 		if (ret)
@@ -478,6 +482,9 @@ static int sti_pwm_probe_dt(struct sti_pwm_chip *pc)
 	struct device_node *np = dev->of_node;
 	struct sti_pwm_compat_data *cdata = pc->cdata;
 	u32 num_devs;
+#ifdef CONFIG_SPACEX
+	u32 max_pwm_cnt;
+#endif /* CONFIG_SPACEX */
 	int ret;
 
 	ret = of_property_read_u32(np, "st,pwm-num-chan", &num_devs);
@@ -487,6 +494,12 @@ static int sti_pwm_probe_dt(struct sti_pwm_chip *pc)
 	ret = of_property_read_u32(np, "st,capture-num-chan", &num_devs);
 	if (!ret)
 		cdata->cpt_num_devs = num_devs;
+
+#ifdef CONFIG_SPACEX
+	ret = of_property_read_u32(np, "st,max-pwm-cnt", &max_pwm_cnt);
+	if (!ret)
+		cdata->max_pwm_cnt = max_pwm_cnt;
+#endif /* CONFIG_SPACEX */
 
 	if (!cdata->pwm_num_devs && !cdata->cpt_num_devs) {
 		dev_err(dev, "No channels configured\n");

@@ -1102,7 +1102,11 @@ static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 
 		if (get_user(c, buf))
 			return -EFAULT;
+#ifdef CONFIG_SPACEX
+		__handle_sysrq(c, true);
+#else
 		__handle_sysrq(c, false);
+#endif /* CONFIG_SPACEX */
 	}
 
 	return count;

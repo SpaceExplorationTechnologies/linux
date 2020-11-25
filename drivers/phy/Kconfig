@@ -70,4 +70,25 @@ source "drivers/phy/st/Kconfig"
 source "drivers/phy/tegra/Kconfig"
 source "drivers/phy/ti/Kconfig"
 
+config PHY_MIPHY_S
+	tristate "STMicroelectronics MIPHY-S PHY driver for GLLCFF"
+	depends on ARCH_STI
+	depends on HAS_IOMEM
+	depends on OF
+	select GENERIC_PHY
+	select SENSORS_ST_VTSENS
+	help
+	  Enable this to support the miphy-s transceiver
+	  that is part of STMicroelectronics GLLCFF SoC.
+
+config PHY_EPHY
+	tristate "STMicroelectronics Embedded PHY driver for GLLCFF"
+	depends on ARCH_STI
+	depends on HAS_IOMEM
+	depends on OF
+	select GENERIC_PHY
+	help
+	  Enable this to support the embedded phy transceiver
+	  that is part of STMicroelectronics GLLCFF SoC.
+
 endmenu

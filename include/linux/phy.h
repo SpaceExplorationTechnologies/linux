@@ -19,7 +19,11 @@
 #include <linux/mii.h>
 #include <linux/module.h>
 #include <linux/timer.h>
+#ifndef CONFIG_SPACEX
 #include <linux/workqueue.h>
+#else /* !CONFIG_SPACEX */
+#include <linux/kthread.h>
+#endif /* CONFIG_SPACEX */
 #include <linux/mod_devicetable.h>
 
 #include <linux/atomic.h>
@@ -430,7 +434,14 @@ struct phy_device {
 	void *priv;
 
 	/* Interrupt and Polling infrastructure */
+#ifndef CONFIG_SPACEX
 	struct delayed_work state_queue;
+#else /* !CONFIG_SPACEX */
+	struct kthread_worker phy_state_worker;
+	struct task_struct *phy_state_worker_task;
+	struct kthread_work state_queue;
+	struct timer_list state_queue_timer;
+#endif /* CONFIG_SPACEX */
 
 	struct mutex lock;
 
@@ -1143,7 +1154,11 @@ void phy_drivers_unregister(struct phy_driver *drv, int n);
 int phy_driver_register(struct phy_driver *new_driver, struct module *owner);
 int phy_drivers_register(struct phy_driver *new_driver, int n,
 			 struct module *owner);
+#ifndef CONFIG_SPACEX
 void phy_state_machine(struct work_struct *work);
+#else /* !CONFIG_SPACEX */
+void phy_state_machine(struct kthread_work *work);
+#endif /* CONFIG_SPACEX */
 void phy_queue_state_machine(struct phy_device *phydev, unsigned long jiffies);
 void phy_mac_interrupt(struct phy_device *phydev);
 void phy_start_machine(struct phy_device *phydev);

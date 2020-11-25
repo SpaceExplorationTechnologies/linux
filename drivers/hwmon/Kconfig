@@ -738,6 +738,16 @@ config SENSORS_LTC2990
 	  This driver can also be built as a module. If so, the module will
 	  be called ltc2990.
 
+config SENSORS_LTC2991
+	tristate "Linear Technology LTC2991"
+	depends on I2C
+	help
+	  If you say yes here you get support for Linear Technology LTC2991
+	  I2C voltage and temperature monitor interface.
+
+	  This driver can also be built as a module. If so, the module will
+	  be called ltc2991.
+
 config SENSORS_LTC4151
 	tristate "Linear Technology LTC4151"
 	depends on I2C
@@ -816,6 +826,15 @@ config SENSORS_MAX1111
 
 	  This driver can also be built as a module. If so, the module
 	  will be called max1111.
+
+config SENSORS_MAX1153
+	tristate "Maxim MAX1153 Multichannel, Serial 10-bit ADC chip"
+	depends on SPI_MASTER
+	help
+	  Say y here to support Maxim's MAX1153/1154 ADC chips.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called max1153.
 
 config SENSORS_MAX16065
 	tristate "Maxim MAX16065 System Manager and compatibles"
@@ -1546,6 +1565,18 @@ config SENSORS_STTS751
 	  This driver can also be built as a module. If so, the module
 	  will be called stts751.
 
+config SENSORS_SFPP
+	tristate "SFF SFP+ module"
+	depends on I2C
+	default n
+	help
+	  If you say yes here you get support for the hardware monitoring
+	  features of SFP+ networking modules, as described in the
+	  SFF-8472 specification.
+
+	  This driver exposes the 7 ADC channels described in the
+	  specification, but does not support externally calibrated devices.
+
 config SENSORS_SMM665
 	tristate "Summit Microelectronics SMM665"
 	depends on I2C
@@ -1559,6 +1590,17 @@ config SENSORS_SMM665
 
 	  This driver can also be built as a module. If so, the module will
 	  be called smm665.
+
+config SENSORS_ST_VTSENS
+	tristate "ST Microelectronics VTSens"
+	depends on ARCH_STI && OF
+	default n
+	help
+	  If you say yes here you get support for the Voltage & Thermal
+	  sensors provided by the ST Microelectronics VTSens IP.
+
+	  This driver can also be built as a module. If so, the module will
+	  be called st_vtsens.
 
 config SENSORS_ADC128D818
 	tristate "Texas Instruments ADC128D818"
@@ -1593,7 +1635,7 @@ config SENSORS_ADS7871
 
 config SENSORS_AMC6821
 	tristate "Texas Instruments AMC6821"
-	depends on I2C 
+	depends on I2C
 	help
 	  If you say yes here you get support for the Texas Instruments
 	  AMC6821 hardware monitoring chips.

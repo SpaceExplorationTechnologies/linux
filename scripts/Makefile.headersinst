@@ -70,7 +70,8 @@ quiet_cmd_remove = REMOVE  $(unwanted)
 
 __headers: $(all-headers)
 ifneq ($(unwanted),)
-	$(call cmd,remove)
+        @# (CONFIG_SPACEX) PLAT-1894: Don't remove toolchain headers.
+	@#$(call cmd,remove)
 endif
 	@:
 

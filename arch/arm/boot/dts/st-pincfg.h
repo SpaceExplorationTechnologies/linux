@@ -27,15 +27,15 @@
 #define CLK_D			(3 << 18)
 
 /* User-frendly defines for Pin Direction */
-		/* oe = 0, pu = 0, od = 0 */
+/* oe = 0, pu = 0, od = 0 */
 #define IN			(0)
-		/* oe = 0, pu = 1, od = 0 */
+/* oe = 0, pu = 1, od = 0 */
 #define IN_PU			(PU)
-		/* oe = 1, pu = 0, od = 0 */
+/* oe = 1, pu = 0, od = 0 */
 #define OUT			(OE)
-		/* oe = 1, pu = 0, od = 1 */
+/* oe = 1, pu = 0, od = 1 */
 #define BIDIR			(OE | OD)
-		/* oe = 1, pu = 1, od = 1 */
+/* oe = 1, pu = 1, od = 1 */
 #define BIDIR_PU		(OE | PU | OD)
 
 /* RETIME_TYPE */

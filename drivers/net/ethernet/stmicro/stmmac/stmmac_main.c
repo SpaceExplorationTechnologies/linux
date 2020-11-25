@@ -231,7 +231,7 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
 {
 	u32 clk_rate;
 
-	clk_rate = clk_get_rate(priv->plat->stmmac_clk);
+	clk_rate = clk_get_rate(priv->plat->pclk);
 
 	/* Platform provided default clk_csr would be assumed valid
 	 * for all other cases except for the below mentioned ones.
@@ -983,6 +983,11 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 {
 	int interface = priv->plat->interface;
 
+#ifdef CONFIG_SPACEX
+	if (priv->plat->disable_pcs)
+		return;
+#endif
+
 	if (priv->dma_cap.pcs) {
 		if ((interface == PHY_INTERFACE_MODE_RGMII) ||
 		    (interface == PHY_INTERFACE_MODE_RGMII_ID) ||
@@ -1050,6 +1055,17 @@ static int stmmac_phy_setup(struct stmmac_priv *priv)
 		return PTR_ERR(phylink);
 
 	priv->phylink = phylink;
+
+#ifdef CONFIG_SPACEX
+	if (priv->plat->disable_fcs) {
+		u32 ctrl = readl(priv->ioaddr + MAC_CTRL_REG);
+
+		/* Disable FCS */
+		ctrl |= 0x02000000;
+		writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
+	}
+#endif
+
 	return 0;
 }
 
@@ -2061,13 +2077,22 @@ static int stmmac_napi_check(struct stmmac_priv *priv, u32 chan)
 	if ((status & handle_rx) && (chan < priv->plat->rx_queues_to_use)) {
 		if (napi_schedule_prep(&ch->rx_napi)) {
 			stmmac_disable_dma_irq(priv, priv->ioaddr, chan);
+#ifndef CONFIG_SPACEX
 			__napi_schedule_irqoff(&ch->rx_napi);
+#else
+			__napi_schedule(&ch->rx_napi);
+#endif
 			status |= handle_tx;
 		}
 	}
 
-	if ((status & handle_tx) && (chan < priv->plat->tx_queues_to_use))
+	if ((status & handle_tx) && (chan < priv->plat->tx_queues_to_use)) {
+#ifndef CONFIG_SPACEX
 		napi_schedule_irqoff(&ch->tx_napi);
+#else
+		napi_schedule(&ch->tx_napi);
+#endif
+	}
 
 	return status;
 }

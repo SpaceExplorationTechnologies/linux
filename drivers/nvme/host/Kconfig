@@ -23,6 +23,25 @@ config NVME_MULTIPATH
 	   /dev/nvmeXnY device will show up for each NVMe namespaces,
 	   even if it is accessible through multiple controllers.
 
+config BLK_DEV_NVME_POLL
+	bool "Poll NVM Express block device for interrupts"
+	depends on BLK_DEV_NVME
+	---help---
+	  When enabled, the nvme driver will poll for I/O, as a backup for
+	  interrupts. A new module parameter will be provided called
+	  poll_interval_ms.
+
+	  If unsure, say N.
+
+config BLK_DEV_NVME_POLL_INTERVAL_MS
+	int "NVM Express default polling intervals (in ms)"
+	default 50
+	depends on BLK_DEV_NVME_POLL
+	---help---
+	  The default NVMe polling interval for the poll_interval_ms module
+	  parameter. This is a driver-level parameter and therefore
+	  affects all NVMe block devices.
+
 config NVME_FABRICS
 	tristate
 

@@ -1255,6 +1255,20 @@ static inline int gem_ptp_do_txstamp(struct macb_queue *queue, struct sk_buff *s
 	if (queue->bp->tstamp_config.tx_type == TSTAMP_DISABLED)
 		return -ENOTSUPP;
 
+#ifdef CONFIG_SPACEX
+	/* Most sockets will not have asked for hardware timestamping, so don't
+	 * try to shove timestamps at them! Otherwise, we might clog up their
+	 * error queues with timestamps.
+	 * This flag is set in the xmit function in response to the
+	 * SKBTX_HW_TSTAMP flag on the socket.
+	 * We return 1 in this case -- it is not an error, but we also do
+	 * not want the caller to forget to free the skb (there is no HW PTP
+	 * timestamp worker that will later free it).
+	 */
+	if (likely(!(skb_shinfo(skb)->tx_flags & SKBTX_IN_PROGRESS)))
+		return 1;
+#endif /* CONFIG_SPACEX */
+
 	return gem_ptp_txstamp(queue, skb, desc);
 }
 
