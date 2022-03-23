@@ -1,0 +1,136 @@
+/*
+ * Copyright (c) 2016 stmicroelectronics Limited
+ * Author: Carmelo Amoroso <carmelo.amoroso@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the gnu general public license version 2 as
+ * published by the free software foundation.
+ */
+
+#include <dt-bindings/clock/gllcff-clk-refs.h>
+
+/ {
+	clocks {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+
+		/*
+		 * Fixed 60 MHz sinus2square SoC refclkin
+		 */
+		clk_sysin: clk-sysin {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <60000000>;
+		};
+
+		/*
+		 * Fixed clock to reflect unused inputs into the cross-bar
+		 */
+		clk_unused: clk-unused {
+			#clock-cells = <0>;
+			compatible = "fixed-clock";
+			clock-frequency = <0>;
+			clock-output-names = "clk-unused";
+		};
+
+		clk_s_c0_quadfs: clk-s-c0-quadfs@8000000 {
+			#clock-cells = <1>;
+			compatible = "st,quadfs-pll28";
+			reg = <0x0 0x8000000 0x400>;
+
+			clocks = <&clk_sysin>;
+
+			clock-output-names = "clk-s-c0-fs0-ch0",
+					     "clk-s-c0-fs0-ch1",
+					     "clk-s-c0-fs0-ch2",
+					     "clk-s-c0-fs0-ch3";
+
+		};
+
+		clk_s_c0: clockgen-c@8000000 {
+			compatible = "st,clkgen-c32";
+			reg = <0x0 0x8000000 0x400>;
+
+			clk_s_c0_pll0: clk-s-c0-pll0 {
+				#clock-cells = <1>;
+				compatible = "st,stigllcff-clkgen-pll5k0";
+
+				clocks = <&clk_sysin>;
+
+				clock-output-names = "clk-s-c0-pll0-odf-0";
+			};
+
+			clk_s_c0_pll1: clk-s-c0-pll1 {
+				#clock-cells = <1>;
+				compatible = "st,stigllcff-clkgen-pll5k1",
+					     "st,clkgen-plls-c32";
+
+				clocks = <&clk_sysin>;
+
+				clock-output-names = "clk-s-c0-pll1-odf-0";
+			};
+
+			clk_s_c0_flexgen: clk-s-c0-flexgen {
+				#clock-cells = <1>;
+				compatible = "st,flexgen";
+
+				clocks = <&clk_s_c0_pll0 CLK_S_C0_PLL0_ODF_0>,
+					 <&clk_s_c0_pll1 CLK_S_C0_PLL1_ODF_0>,
+					 <&clk_s_c0_quadfs CLK_S_C0_4FS_CH0>,
+					 <&clk_s_c0_quadfs CLK_S_C0_4FS_CH1>,
+					 <&clk_s_c0_quadfs CLK_S_C0_4FS_CH2>,
+					 <&clk_s_c0_quadfs CLK_S_C0_4FS_CH3>,
+					 <&clk_sysin>,  /* clkrefin_0 */
+					 <&clk_unused>, /* clkrefin_1 */
+					 <&clk_unused>, /* srclkin_0 */
+					 <&clk_unused>, /* srclkin_0 */
+					 <&clk_sysin>;  /* clk_mode_refsel */
+
+				clock-output-names = "clk-ext2f",
+						     "", /* div_1 space */
+						     "clk-icn-cpu",
+						     "clk-icn-esram-rom",
+						     "", /* div_4 spare */
+						     "clk-periph-0",
+						     "clk-spi",
+						     "clk-xin-emmc",
+						     "clk-icn-dma-conn",
+						     "clk-icn-main",
+						     "", /* div_10 spare */
+						     "clk-icn-mdm-ntw",
+						     "clk-icn-bootdev",
+						     "clk-periph-1",
+						     "clk-periph-2",
+						     "clk-atb",
+						     "clk-lpc",
+						     "clk-1pps",
+						     "", /* div_18 spare */
+						     "clk-phy-gmac-0",
+						     "", /* div_20 spare */
+						     "clk-proc-ntw",
+						     "clk-proc-dma",
+						     "clk-ext-ddr",
+						     "clk-tpiu",
+						     "clk-axim-mdmtx",
+						     "clk-axim-mdmrx",
+						     "clk-ptp-ref-gmac-0",
+						     "clk-ptp-ref-gmac-1",
+						     "clk-tsp",
+						     "", /* div_30 spare */
+						     ""; /* div_31 spare */
+
+				clock-critical = <CLK_EXT2F>,
+						 <CLK_ICN_CPU>,
+						 <CLK_ICN_ESRAM>,
+						 <CLK_PERIPH_0>,
+						 <CLK_ICN_DMA_CONN>,
+						 <CLK_ICN_MAIN>,
+						 <CLK_ICN_MDM_NTW>,
+						 <CLK_ICN_BOOTDEV>,
+						 <CLK_PERIPH_1>,
+						 <CLK_PERIPH_2>;
+			};
+		};
+	};
+};

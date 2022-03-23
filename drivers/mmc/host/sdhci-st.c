@@ -145,7 +145,8 @@ static void st_mmcss_cconfig(struct device_node *np, struct sdhci_host *host)
 	struct mmc_host *mhost = host->mmc;
 	u32 cconf2, cconf3, cconf4, cconf5;
 
-	if (!of_device_is_compatible(np, "st,sdhci-stih407"))
+	if (!of_device_is_compatible(np, "st,sdhci-stih407") &&
+	    !of_device_is_compatible(np, "st,sdhci-gllcff"))
 		return;
 
 	cconf2 = ST_MMC_CCONFIG_2_DEFAULT;

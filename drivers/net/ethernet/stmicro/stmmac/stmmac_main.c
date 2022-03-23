@@ -236,7 +236,7 @@ static void stmmac_clk_csr_set(struct stmmac_priv *priv)
 {
 	u32 clk_rate;
 
-	clk_rate = clk_get_rate(priv->plat->stmmac_clk);
+	clk_rate = clk_get_rate(priv->plat->pclk);
 
 	/* Platform provided default clk_csr would be assumed valid
 	 * for all other cases except for the below mentioned ones.
@@ -823,7 +823,6 @@ static int stmmac_init_ptp(struct stmmac_priv *priv)
 
 static void stmmac_release_ptp(struct stmmac_priv *priv)
 {
-	clk_disable_unprepare(priv->plat->clk_ptp_ref);
 	stmmac_ptp_unregister(priv);
 }
 
@@ -963,7 +962,13 @@ static void stmmac_mac_link_down(struct phylink_config *config,
 {
 	struct stmmac_priv *priv = netdev_priv(to_net_dev(config->dev));
 
+	bool always_enable_mac_tx = false;
+#ifdef CONFIG_SPACEX
+	always_enable_mac_tx = priv->plat->always_enable_mac_tx;
+	stmmac_mac_set(priv, priv->ioaddr, false, always_enable_mac_tx);
+#else
 	stmmac_mac_set(priv, priv->ioaddr, false);
+#endif
 	priv->eee_active = false;
 	priv->tx_lpi_enabled = false;
 	stmmac_eee_init(priv);
@@ -1059,7 +1064,11 @@ static void stmmac_mac_link_up(struct phylink_config *config,
 
 	writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
 
+#ifdef CONFIG_SPACEX
+	stmmac_mac_set(priv, priv->ioaddr, true, false);
+#else
 	stmmac_mac_set(priv, priv->ioaddr, true);
+#endif
 	if (phy && priv->dma_cap.eee) {
 		priv->eee_active = phy_init_eee(phy, 1) >= 0;
 		priv->eee_enabled = stmmac_eee_init(priv);
@@ -1087,6 +1096,11 @@ static const struct phylink_mac_ops stmmac_phylink_mac_ops = {
 static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 {
 	int interface = priv->plat->interface;
+
+#ifdef CONFIG_SPACEX
+	if (priv->plat->disable_pcs)
+		return;
+#endif
 
 	if (priv->dma_cap.pcs) {
 		if ((interface == PHY_INTERFACE_MODE_RGMII) ||
@@ -1166,6 +1180,17 @@ static int stmmac_phy_setup(struct stmmac_priv *priv)
 		return PTR_ERR(phylink);
 
 	priv->phylink = phylink;
+
+#ifdef CONFIG_SPACEX
+	if (priv->plat->disable_fcs) {
+		u32 ctrl = readl(priv->ioaddr + MAC_CTRL_REG);
+
+		/* Disable FCS */
+		ctrl |= 0x02000000;
+		writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
+	}
+#endif
+
 	return 0;
 }
 
@@ -2750,7 +2775,11 @@ static int stmmac_hw_setup(struct net_device *dev, bool init_ptp)
 	}
 
 	/* Enable the MAC Rx/Tx */
+#ifdef CONFIG_SPACEX
+	stmmac_mac_set(priv, priv->ioaddr, true, false);
+#else
 	stmmac_mac_set(priv, priv->ioaddr, true);
+#endif
 
 	/* Set the HW DMA mode and the COE */
 	stmmac_dma_operation_mode(priv);
@@ -3023,7 +3052,11 @@ static int stmmac_release(struct net_device *dev)
 	free_dma_desc_resources(priv);
 
 	/* Disable the MAC Rx/Tx */
+#ifdef CONFIG_SPACEX
+	stmmac_mac_set(priv, priv->ioaddr, false, false);
+#else
 	stmmac_mac_set(priv, priv->ioaddr, false);
+#endif
 
 	netif_carrier_off(dev);
 
@@ -5231,7 +5264,11 @@ int stmmac_dvr_remove(struct device *dev)
 	netdev_info(priv->dev, "%s: removing driver", __func__);
 
 	stmmac_stop_all_dma(priv);
+#ifdef CONFIG_SPACEX
+	stmmac_mac_set(priv, priv->ioaddr, false, false);
+#else
 	stmmac_mac_set(priv, priv->ioaddr, false);
+#endif
 	netif_carrier_off(ndev);
 	unregister_netdev(ndev);
 
@@ -5310,7 +5347,11 @@ int stmmac_suspend(struct device *dev)
 		rtnl_unlock();
 		mutex_lock(&priv->lock);
 
-		stmmac_mac_set(priv, priv->ioaddr, false);
+#ifdef CONFIG_SPACEX
+	stmmac_mac_set(priv, priv->ioaddr, false, false);
+#else
+	stmmac_mac_set(priv, priv->ioaddr, false);
+#endif
 		pinctrl_pm_select_sleep_state(priv->device);
 	}
 	mutex_unlock(&priv->lock);

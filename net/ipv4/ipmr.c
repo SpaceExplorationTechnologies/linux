@@ -472,6 +472,7 @@ static struct net_device *ipmr_new_tunnel(struct net *net, struct vifctl *v)
 	if (dev_open(new_dev, NULL))
 		goto out_unregister;
 	dev_hold(new_dev);
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 	err = dev_set_allmulti(new_dev, 1);
 	if (err) {
 		dev_close(new_dev);
@@ -480,6 +481,7 @@ static struct net_device *ipmr_new_tunnel(struct net *net, struct vifctl *v)
 		dev_put(new_dev);
 		new_dev = ERR_PTR(err);
 	}
+#endif /* CONFIG_IP_MROUTE_NO_ALLMULTI */
 	return new_dev;
 
 out_unregister:
@@ -682,7 +684,9 @@ static int vif_delete(struct mr_table *mrt, int vifi, int notify,
 
 	write_unlock_bh(&mrt_lock);
 
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 	dev_set_allmulti(dev, -1);
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 
 	in_dev = __in_dev_get_rtnl(dev);
 	if (in_dev) {
@@ -831,12 +835,14 @@ static int vif_add(struct net *net, struct mr_table *mrt,
 		dev = ipmr_reg_vif(net, mrt);
 		if (!dev)
 			return -ENOBUFS;
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 		err = dev_set_allmulti(dev, 1);
 		if (err) {
 			unregister_netdevice(dev);
 			dev_put(dev);
 			return err;
 		}
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 		break;
 	case VIFF_TUNNEL:
 		dev = ipmr_new_tunnel(net, vifc);
@@ -856,11 +862,13 @@ static int vif_add(struct net *net, struct mr_table *mrt,
 		}
 		if (!dev)
 			return -EADDRNOTAVAIL;
+#ifndef CONFIG_IP_MROUTE_NO_ALLMULTI
 		err = dev_set_allmulti(dev, 1);
 		if (err) {
 			dev_put(dev);
 			return err;
 		}
+#endif /* !CONFIG_IP_MROUTE_NO_ALLMULTI */
 		break;
 	default:
 		return -EINVAL;

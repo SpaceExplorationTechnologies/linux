@@ -35,6 +35,7 @@ sed -E -e '
 	s@^#include <linux/compiler(|_types).h>@@
 	s/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g
 	s/(^|[[:space:](])(inline|asm|volatile)([[:space:](]|$)/\1__\2__\3/g
+	s/(^|[ \t(])__always_(inline)([ \t(]|$)/\1__\2__\3/g
 	s@#(ifndef|define|endif[[:space:]]*/[*])[[:space:]]*_UAPI@#\1 @
 ' $INFILE > $TMPFILE || exit 1
 

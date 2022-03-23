@@ -312,9 +312,11 @@ bool sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
 	int ret = NETDEV_TX_BUSY;
 	bool again = false;
 
+#ifndef CONFIG_SPACEX
 	/* And release qdisc */
 	if (root_lock)
 		spin_unlock(root_lock);
+#endif
 
 	/* Note that we validate skb (GSO, checksum, ...) outside of locks */
 	if (validate)
@@ -339,13 +341,17 @@ bool sch_direct_xmit(struct sk_buff *skb, struct Qdisc *q,
 
 		HARD_TX_UNLOCK(dev, txq);
 	} else {
+#ifndef CONFIG_SPACEX
 		if (root_lock)
 			spin_lock(root_lock);
+#endif
 		return true;
 	}
 
+#ifndef CONFIG_SPACEX
 	if (root_lock)
 		spin_lock(root_lock);
+#endif
 
 	if (!dev_xmit_complete(ret)) {
 		/* Driver returned NETDEV_TX_BUSY - requeue skb */

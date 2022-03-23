@@ -47,6 +47,26 @@ static void dwxgmac2_core_init(struct mac_device_info *hw,
 	writel(XGMAC_INT_DEFAULT_EN, ioaddr + XGMAC_INT_EN);
 }
 
+#ifdef CONFIG_SPACEX
+static void dwxgmac2_set_mac(void __iomem *ioaddr, bool enable, bool always_enable_mac_tx)
+{
+	u32 tx = readl(ioaddr + XGMAC_TX_CONFIG);
+	u32 rx = readl(ioaddr + XGMAC_RX_CONFIG);
+
+	if (enable) {
+		tx |= XGMAC_CONFIG_TE;
+		rx |= XGMAC_CONFIG_RE;
+	} else {
+		if (!always_enable_mac_tx) {
+			tx &= ~XGMAC_CONFIG_TE;
+		}
+		rx &= ~XGMAC_CONFIG_RE;
+	}
+
+	writel(tx, ioaddr + XGMAC_TX_CONFIG);
+	writel(rx, ioaddr + XGMAC_RX_CONFIG);
+}
+#else
 static void dwxgmac2_set_mac(void __iomem *ioaddr, bool enable)
 {
 	u32 tx = readl(ioaddr + XGMAC_TX_CONFIG);
@@ -63,6 +83,7 @@ static void dwxgmac2_set_mac(void __iomem *ioaddr, bool enable)
 	writel(tx, ioaddr + XGMAC_TX_CONFIG);
 	writel(rx, ioaddr + XGMAC_RX_CONFIG);
 }
+#endif
 
 static int dwxgmac2_rx_ipc(struct mac_device_info *hw)
 {

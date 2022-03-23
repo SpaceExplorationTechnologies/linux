@@ -336,6 +336,13 @@ void panic(const char *fmt, ...)
 			reboot_mode = panic_reboot_mode;
 		emergency_restart();
 	}
+#if defined(CONFIG_PANIC_FORCE_HALT)
+{
+	/* Spin forever with interrupts off */
+	while (1)
+		;
+}
+#endif
 #ifdef __sparc__
 	{
 		extern int stop_a_enabled;

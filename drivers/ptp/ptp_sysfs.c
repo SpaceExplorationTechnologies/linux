@@ -255,6 +255,147 @@ static ssize_t ptp_pin_store(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
+/**
+ * ptp_alarm_store() - Sets an alarm time
+ * @dev:	&struct device upon which we are setting the alarm
+ * @dattr:	&struct device_attribute for the sysfs file
+ * @buf:	kernel memory containing user data
+ * @count:	number of bytes the user wants to write
+ *
+ * Return: 0 on success, negative error code on failure.
+ *
+ * Note that setting the time to 0 disables the alarm.
+ */
+static ssize_t ptp_alarm_store(struct device *dev,
+			       struct device_attribute *dattr,
+			       const char *buf, size_t count)
+{
+	struct ptp_clock *ptp = dev_get_drvdata(dev);
+	struct ptp_clock_info *info = ptp->info;
+	struct ptp_alarm_attribute *alarm_attr =
+		container_of(dattr, struct ptp_alarm_attribute, dattr);
+	struct ptp_clock_request req = { .type = PTP_CLK_REQ_ALARM, };
+	int cnt;
+	int ret;
+
+	req.alarm.index = (alarm_attr - ptp->alarm_attrs);
+
+	/*
+	 * Parse the time the user provided.
+	 */
+	cnt = sscanf(buf, "%lld %u", &alarm_attr->time.sec,
+		     &alarm_attr->time.nsec);
+	if (cnt != 2)
+		return -EINVAL;
+	req.alarm.time = (((u64) alarm_attr->time.sec * NSEC_PER_SEC) +
+			  alarm_attr->time.nsec);
+	/*
+	 * Setting the alarm time to 0 disables the alarm.
+	 */
+	ret = info->enable(info, &req, (req.alarm.time == 0 ? 0 : 1));
+	if (ret != 0)
+		return ret;
+	return count;
+}
+
+/**
+ * ptp_alarm_show() - Show an alarm time
+ * @dev:	&struct device upon which we are querying the alarm
+ * @dattr:	&struct device_attribute for the sysfs file
+ * @page:	page of kernel memory for user data
+ *
+ * Return: 0 on success, negative error code on failure.
+ */
+static ssize_t ptp_alarm_show(struct device *dev,
+			      struct device_attribute *dattr, char *page)
+{
+	struct ptp_alarm_attribute *alarm_attr =
+		container_of(dattr, struct ptp_alarm_attribute, dattr);
+
+	return scnprintf(page, PAGE_SIZE, "%lld %u\n",
+			 alarm_attr->time.sec, alarm_attr->time.nsec);
+}
+
+/**
+ * ptp_remove_alarm_files() - Removes 'alarmNN' files from the sysfs directory
+ *
+ * @ptp:	our &struct ptp_clock data structure
+ * @num_files:	number of alarm files to remove (useful if init failed)
+ */
+static void ptp_remove_alarm_files(struct ptp_clock *ptp, int num_files)
+{
+	struct device *dev = &ptp->dev;
+	int i;
+
+	for (i = 0; i < num_files; i++) {
+		struct ptp_alarm_attribute *pattr =
+			&ptp->alarm_attrs[i];
+		sysfs_put(pattr->kn);
+		device_remove_file(dev, &pattr->dattr);
+	}
+	kfree(ptp->alarm_attrs);
+	ptp->alarm_attrs = NULL;
+}
+
+/**
+ * ptp_create_alarm_files() - Creates alarmNN files in the sysfs directory
+ *
+ * @ptp:	our &struct ptp_clock data structure
+ *
+ * Return: 0 on success, or a negative error code on failure
+ */
+static int ptp_create_alarm_files(struct ptp_clock *ptp)
+{
+	struct device *dev = &ptp->dev;
+	struct ptp_clock_info *info = ptp->info;
+	int init_alarm_index;
+	struct ptp_alarm_attribute *pattr;
+	int err;
+
+	ptp->alarm_attrs = kzalloc((info->n_alarm *
+				    sizeof(*ptp->alarm_attrs)),
+				   GFP_KERNEL);
+	if (!ptp->alarm_attrs) {
+		err = -ENOMEM;
+		goto out;
+	}
+	for (init_alarm_index = 0;
+	     init_alarm_index < info->n_alarm;
+	     init_alarm_index++) {
+		int len;
+
+		pattr = &ptp->alarm_attrs[init_alarm_index];
+		len = snprintf(pattr->name, sizeof(pattr->name),
+			       "alarm%d", init_alarm_index);
+		if (len >= sizeof(pattr->name)) {
+			err = -EINVAL;
+			goto out1;
+		}
+		sysfs_attr_init(&pattr->dattr.attr);
+		pattr->dattr.attr.name = pattr->name;
+		pattr->dattr.attr.mode = 0664;
+		pattr->dattr.show = ptp_alarm_show;
+		pattr->dattr.store = ptp_alarm_store;
+		err = device_create_file(dev, &pattr->dattr);
+		if (err)
+			goto out1;
+		pattr->kn = sysfs_get_dirent(dev->kobj.sd, pattr->name);
+		if (!pattr->kn) {
+			err = -ENOENT;
+			goto out2;
+		}
+	}
+
+	return 0;
+
+out2:
+	device_remove_file(dev, &pattr->dattr);
+out1:
+	ptp_remove_alarm_files(ptp, init_alarm_index);
+out:
+	return err;
+}
+
 int ptp_populate_pin_groups(struct ptp_clock *ptp)
 {
 	struct ptp_clock_info *info = ptp->info;
@@ -287,6 +428,12 @@ int ptp_populate_pin_groups(struct ptp_clock *ptp)
 
 	ptp->pin_attr_groups[0] = &ptp->pin_attr_group;
 
+	if (info->n_alarm) {
+		err = ptp_create_alarm_files(ptp);
+		if (err)
+			goto no_pin_attr;
+	}
+
 	return 0;
 
 no_pin_attr:
@@ -297,6 +444,10 @@ no_dev_attr:
 
 void ptp_cleanup_pin_groups(struct ptp_clock *ptp)
 {
+	if (ptp->info->n_alarm) {
+		ptp_remove_alarm_files(ptp, ptp->info->n_alarm);
+	}
+
 	kfree(ptp->pin_attr);
 	kfree(ptp->pin_dev_attr);
 }

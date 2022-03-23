@@ -488,6 +488,7 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
 	if (of_device_is_compatible(np, "st,spear600-gmac") ||
 		of_device_is_compatible(np, "snps,dwmac-3.50a") ||
 		of_device_is_compatible(np, "snps,dwmac-3.70a") ||
+		of_device_is_compatible(np, "st,gllcff-dwmac") ||
 		of_device_is_compatible(np, "snps,dwmac")) {
 		/* Note that the max-frame-size parameter as defined in the
 		 * ePAPR v1.1 spec is defined as max-frame-size, it's
@@ -527,7 +528,8 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
 		plat->tso_en = of_property_read_bool(np, "snps,tso");
 	}
 
-	if (of_device_is_compatible(np, "snps,dwmac-3.610") ||
+	if (of_device_is_compatible(np, "st,gllcff-dwmac") ||
+		of_device_is_compatible(np, "snps,dwmac-3.610") ||
 		of_device_is_compatible(np, "snps,dwmac-3.710")) {
 		plat->enh_desc = 1;
 		plat->bugged_jumbo = 1;

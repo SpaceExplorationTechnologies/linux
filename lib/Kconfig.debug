@@ -1090,6 +1090,16 @@ endmenu # "Debug lockups and hangs"
 
 menu "Scheduler Debugging"
 
+config PANIC_FORCE_HALT
+	bool "force a system halt after panic"
+	default n
+	help
+	  While in a panic and if the system is not configured for a reboot,
+	  force the system to spin forever inside this function, with all
+	  interrupts disabled.
+
+	  Say N if unsure.
+
 config SCHED_DEBUG
 	bool "Collect scheduler debugging info"
 	depends on DEBUG_KERNEL && PROC_FS

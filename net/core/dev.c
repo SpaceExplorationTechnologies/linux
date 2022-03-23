@@ -6475,6 +6475,10 @@ EXPORT_SYMBOL(napi_schedule_prep);
  */
 void __napi_schedule_irqoff(struct napi_struct *n)
 {
+#ifdef CONFIG_SPACEX
+	WARN_ONCE(!irqs_disabled(),
+		  "__napi_schedule_irqoff called with irqs enabled");
+#endif
 	if (!IS_ENABLED(CONFIG_PREEMPT_RT))
 		____napi_schedule(this_cpu_ptr(&softnet_data), n);
 	else

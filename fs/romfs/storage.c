@@ -273,7 +273,20 @@ int romfs_dev_strcmp(struct super_block *sb, unsigned long pos,
 	if (size > ROMFS_MAXFN)
 		return -ENAMETOOLONG;
 	if (size + 1 > limit - pos)
+#ifndef CONFIG_SPACEX
 		return -EIO;
+#else
+		/*
+		 * If this if statement is true, that means the string can't
+		 * possibly match because there aren't enough bytes left in the
+		 * block. The total number of bytes available is (limit - pos).
+		 * Since file names are null-terminated in ROMFS, size + 1 is
+		 * the amount of bytes required for str to match the file name
+		 * of this block. Hence, this isn't an EIO, but rather just
+		 * means the string can't possibly match.
+		 */
+		return 0;
+#endif
 
 #ifdef CONFIG_ROMFS_ON_MTD
 	if (sb->s_mtd)

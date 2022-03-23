@@ -1210,7 +1210,10 @@ archprepare: outputmakefile archheaders archscripts scripts include/config/kerne
 	asm-generic $(version_h) $(autoksyms_h) include/generated/utsrelease.h \
 	include/generated/autoconf.h
 
-prepare0: archprepare
+# needed to generate compile.h
+include init/Makefile
+
+prepare0: archprepare include/generated/compile.h
 	$(Q)$(MAKE) $(build)=scripts/mod
 	$(Q)$(MAKE) $(build)=.
 

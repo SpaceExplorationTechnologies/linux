@@ -89,3 +89,6 @@ obj-$(CONFIG_EDAC_QCOM)			+= qcom_edac.o
 obj-$(CONFIG_EDAC_ASPEED)		+= aspeed_edac.o
 obj-$(CONFIG_EDAC_BLUEFIELD)		+= bluefield_edac.o
 obj-$(CONFIG_EDAC_DMC520)		+= dmc520_edac.o
+obj-$(CONFIG_EDAC_CORTEX_ARM64)		+= cortex_arm64_edac.o
+obj-$(CONFIG_EDAC_STI_SRAM)		+= stsram_edac.o
+obj-$(CONFIG_EDAC_CADENCE)		+= cadence_edac.o

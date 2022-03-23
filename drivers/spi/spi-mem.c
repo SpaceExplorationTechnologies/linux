@@ -12,6 +12,10 @@
 
 #include "internals.h"
 
+#ifdef CONFIG_SPACEX
+#include <linux/mtd/spi-nor.h>
+#endif /* CONFIG_SPACEX */
+
 #define SPI_MEM_MAX_BUSWIDTH		8
 
 /**
@@ -267,6 +271,129 @@ static void spi_mem_access_end(struct spi_mem *mem)
 		pm_runtime_put(ctlr->dev.parent);
 }
 
+#ifdef CONFIG_SPACEX
+static bool spi_mem_is_data_xfer(u8 opcode)
+{
+	switch (opcode) {
+	case SPINOR_OP_READ:
+	case SPINOR_OP_READ_4B:
+	case SPINOR_OP_READ_FAST:
+	case SPINOR_OP_READ_FAST_4B:
+	case SPINOR_OP_READ_1_1_2:
+	case SPINOR_OP_READ_1_1_2_4B:
+	case SPINOR_OP_READ_1_2_2:
+	case SPINOR_OP_READ_1_2_2_4B:
+	case SPINOR_OP_READ_1_1_4:
+	case SPINOR_OP_READ_1_1_4_4B:
+	case SPINOR_OP_READ_1_4_4:
+	case SPINOR_OP_READ_1_4_4_4B:
+	case SPINOR_OP_READ_1_1_8:
+	case SPINOR_OP_READ_1_1_8_4B:
+	case SPINOR_OP_READ_1_8_8:
+	case SPINOR_OP_READ_1_8_8_4B:
+	case SPINOR_OP_READ_1_1_1_DTR:
+	case SPINOR_OP_READ_1_1_1_DTR_4B:
+	case SPINOR_OP_READ_1_2_2_DTR:
+	case SPINOR_OP_READ_1_2_2_DTR_4B:
+	case SPINOR_OP_READ_1_4_4_DTR:
+	case SPINOR_OP_READ_1_4_4_DTR_4B:
+	case SPINOR_OP_PP:
+	case SPINOR_OP_PP_4B:
+	case SPINOR_OP_PP_1_1_4:
+	case SPINOR_OP_PP_1_1_4_4B:
+	case SPINOR_OP_PP_1_4_4:
+	case SPINOR_OP_PP_1_4_4_4B:
+	case SPINOR_OP_PP_1_1_8:
+	case SPINOR_OP_PP_1_1_8_4B:
+	case SPINOR_OP_PP_1_8_8:
+	case SPINOR_OP_PP_1_8_8_4B:
+	case SPINOR_OP_AAI_WP:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool spi_mem_is_register_read(u8 opcode)
+{
+	switch (opcode) {
+	case SPINOR_OP_RDSR:
+	case SPINOR_OP_RDSR2:
+	case SPINOR_OP_RDFSR:
+	case SPINOR_OP_XRDSR:
+	case SPINOR_OP_RDID:
+	case SPINOR_OP_RDSFDP:
+	case SPINOR_OP_RDCR:
+	case SPINOR_OP_RDEAR:
+	case SPINOR_OP_RD_EVCR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static int spi_mem_exec_op_striped_reg_read(struct spi_mem *mem,
+					    const struct spi_mem_op *usr_op)
+{
+	/**
+	 * Array holding register reads used to coalesce the two chips when
+	 * striping.
+	 * This needs to be twice as big as the largest register read.
+	 * Size of struct_sfdp_bfpt from spi-nor.c drives this.
+	 */
+	u8 striped_reg_rd_buf[64*2];
+	struct spi_mem_op op = *usr_op;
+	int ret;
+	int i;
+
+	op.parallel_mode = SPI_PARALLEL_MODE_STRIPE;
+	op.data.buf.in = striped_reg_rd_buf;
+	op.data.nbytes *= 2;
+
+	if (op.data.nbytes > sizeof(striped_reg_rd_buf)) {
+		dev_err(&mem->spi->dev,
+			"Register read exceeds maximum size (%d/%ld bytes).\n",
+			op.data.nbytes,
+			sizeof(striped_reg_rd_buf));
+		return -EINVAL;
+	}
+
+	ret = spi_mem_exec_op(mem, &op);
+	if (ret < 0)
+		return ret;
+
+	/* For the ready bits, we must wait for either flash device */
+	if (op.cmd.opcode == SPINOR_OP_RDSR) {
+		striped_reg_rd_buf[0] |= (striped_reg_rd_buf[1] & SR_WIP);
+		striped_reg_rd_buf[1] |= (striped_reg_rd_buf[0] & SR_WIP);
+		striped_reg_rd_buf[0] &= ~(~striped_reg_rd_buf[1] & SR_WEL);
+		striped_reg_rd_buf[1] &= ~(~striped_reg_rd_buf[0] & SR_WEL);
+	}
+	if (op.cmd.opcode == SPINOR_OP_RDFSR) {
+		striped_reg_rd_buf[0] &= ~(~striped_reg_rd_buf[1] & FSR_READY);
+		striped_reg_rd_buf[1] &= ~(~striped_reg_rd_buf[0] & FSR_READY);
+	}
+
+	/*
+	 * We expect the flash devices to always be the same, with the
+	 * exception of the ready bits which we checked above.
+	 */
+	for (i = 0; i < op.data.nbytes; i += 2) {
+		dev_WARN_ONCE(&mem->spi->dev,
+			      striped_reg_rd_buf[i] != striped_reg_rd_buf[i + 1],
+		              "Stripe mode out of sync: reg %02X, len %d, pos %d, %02X != %02X\n",
+		              op.cmd.opcode, op.data.nbytes, i / 2,
+		              striped_reg_rd_buf[i],
+		              striped_reg_rd_buf[i + 1]);
+
+		((u8 *)usr_op->data.buf.in)[i / 2] = striped_reg_rd_buf[i];
+	}
+
+	return 0;
+}
+
+#endif /* CONFIG_SPACEX */
+
 /**
  * spi_mem_exec_op() - Execute a memory operation
  * @mem: the SPI memory
@@ -279,7 +406,11 @@ static void spi_mem_access_end(struct spi_mem *mem)
  *
  * Return: 0 in case of success, a negative error code otherwise.
  */
+#ifndef CONFIG_SPACEX
 int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
+#else /* !CONFIG_SPACEX */
+int spi_mem_exec_op(struct spi_mem *mem, struct spi_mem_op *op)
+#endif /* CONFIG_SPACEX */
 {
 	unsigned int tmpbufsize, xferpos = 0, totalxferlen = 0;
 	struct spi_controller *ctlr = mem->spi->controller;
@@ -287,6 +418,34 @@ int spi_mem_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 	struct spi_message msg;
 	u8 *tmpbuf;
 	int ret;
+#ifdef CONFIG_SPACEX
+	if (mem->flags & SMEM_F_USE_STRIPE) {
+		if (spi_mem_is_data_xfer(op->cmd.opcode)) {
+			/*
+			 * Most operations need to go to both chips in the case striping
+			 * is used except for data transfers to odd addresses. In this
+			 * odd address case we transfer only one byte with the upper
+			 * chip. After this single-byte transfer spi-nor.c will initiate
+			 * another transfer to the following even address.
+			 */
+			if (op->addr.val & 1) {
+				op->parallel_mode = SPI_PARALLEL_MODE_UPPER;
+				op->data.nbytes = 1;
+			} else {
+				op->parallel_mode = SPI_PARALLEL_MODE_STRIPE;
+			}
+			op->addr.val = op->addr.val / 2;
+		} else if (spi_mem_is_register_read(op->cmd.opcode)) {
+			if (op->parallel_mode != SPI_PARALLEL_MODE_STRIPE) {
+				return spi_mem_exec_op_striped_reg_read(mem,
+									op);
+			}
+		} else {
+			op->parallel_mode = SPI_PARALLEL_MODE_CLONE;
+			op->addr.val = op->addr.val / 2;
+		}
+	}
+#endif /* CONFIG_SPACEX */
 
 	ret = spi_mem_check_op(op);
 	if (ret)

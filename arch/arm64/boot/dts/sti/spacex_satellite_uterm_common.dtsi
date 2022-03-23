@@ -1,0 +1,242 @@
+/*
+ * UTERM Device Tree
+ *
+ * spacex_satellite_uterm_common.dtsi
+ *
+ * UTERM device tree entries. Common between Cut 3 and Cut 4.
+ *
+ * Entries in the primary dts file are required to enable these
+ * peripherals and assign them to appropriate driver instances.
+ */
+
+/ {
+	compatible = "st,gllcff";
+
+	chosen {
+		/* This value is updated by U-Boot after it checks
+		 * whether the vehicle should perform a "fast boot".
+		 *
+		 * See the definition of 'bootcmd' in the
+		 * U-Boot environment to see how the value is set.
+		 * See the source of the 'verify_active_proxy'
+		 * shell script in the platform to see how the value
+		 * is used.
+		 */
+		skip-proxy-check = <0>;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x40000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		ranges;
+
+		net_reserved: net_reserved {
+			no-map;
+			reg = <0x0 0x90000000 0x10000000>;
+		};
+	};
+
+	aliases {
+		ttyAS0 = &serial0;
+		ttyAS1 = &serial1;
+		ethernet0 = &ethernet0;
+		ethernet1 = &ethernet1;
+	};
+
+	/*
+	 * Clock un-gating is not automatic, so for uio devices set them
+	 * explicitly to required.
+	 */
+	clocks {
+		clk_s_c0: clockgen-c@8000000 {
+			clk_s_c0_flexgen: clk-s-c0-flexgen {
+				clock-critical = <CLK_EXT2F>,
+						 <CLK_ICN_CPU>,
+						 <CLK_ICN_ESRAM>,
+						 <CLK_PERIPH_0>,
+						 <CLK_ICN_DMA_CONN>,
+						 <CLK_ICN_MAIN>,
+						 <CLK_ICN_MDM_NTW>,
+						 <CLK_ICN_BOOTDEV>,
+						 <CLK_PERIPH_1>,
+						 <CLK_PERIPH_2>,
+						 <CLK_AXIM_MDMTX>,
+						 <CLK_AXIM_MDMRX>,
+						 <CLK_PROC_NTW>,
+						 <CLK_PROC_DMA>;
+			};
+		};
+	};
+
+	soc {
+		/*
+		 * Ethernet via L3 block.
+		 */
+		l3uldma_intc0: l3uldma_intc0@c2010ec {
+			status = "okay";
+		};
+
+		l3dldma_intc1: l3dldma_intc1@c2010f4 {
+			status = "okay";
+		};
+
+		catson_pushpull_l3gmac: pp_l3gmac@0c20c000 {
+			status = "okay";
+		};
+
+		catson_pushpull_uplink: catson_pushpull_uplink {
+			status = "okay";
+		};
+
+		serial0: serial@8850000 {
+			status = "okay";
+		};
+
+		serial1: serial@8860000 {
+			status = "okay";
+		};
+
+		spisfc0: spisfc@1e302000 {
+			status = "okay";
+		};
+
+		vqmmc0_reg: voltage-regulator0 {
+				status = "okay";
+		};
+
+		mmc0: sdhci@1e300000 {
+			status = "okay";
+			max-frequency = <50000000>;
+			/delete-property/ mmc-hs200-1_8v;
+			mmc-ddr-1_8v;
+		};
+
+		trng: trng@22500000 {
+			status = "okay";
+		};
+
+		miphys1: miphy_s@16a00000 {
+			status = "okay";
+		};
+
+		miphys2: miphy_s@16b00000 {
+			status = "okay";
+		};
+
+		ethernet0: dwmac@16700000 {
+			status = "okay";
+			disable-fcs;
+			always-enable-mac-tx;
+
+			/* PHY information for the Embedded PHY */
+			phy-mode = "gmii";
+			snps,phy-addr = <0x2>;
+			phys = <&ephy PHY_NONE>;
+			phy-names = "gmac-phy";
+			st,mdio-write-repeat;
+		};
+
+		dwA415dma0: dma0@8500000 {
+			status = "okay";
+		};
+
+		sram: sram@8030000 {
+			/* enable sram ECC */
+			status = "okay";
+		};
+
+		cache_edac {
+			compatible = "arm,cortex-a53-edac";
+			status = "okay";
+		};
+
+		ephy: ephy@16702100 {
+			status = "okay";
+		};
+
+		modem_rx: modem_rx_mmap {
+			status = "okay";
+		};
+
+		modem_tx: modem_tx_mmap {
+			status = "okay";
+		};
+
+		tx_l2_proc_dma_push_irq_intc: network_ip_2_intc {
+			status = "okay";
+		};
+
+		tx_l2_proc_dma_push_b0_almost_full: network_ip_2_intc11 {
+			status = "okay";
+		};
+
+		tx_l2_proc_dma_push_b1_almost_full: network_ip_2_intc12 {
+			status = "okay";
+		};
+
+		rx_l2_proc_dma_push_irq0: network_ip_4 {
+			status = "okay";
+		};
+
+		rx_l2_proc_dma_push_irq1: network_ip_5 {
+			status = "okay";
+		};
+
+		l2_reg: l2reg_mmap {
+			status = "okay";
+		};
+
+		l3netmmap: l3reg_mmap {
+			status = "okay";
+		};
+
+		l3_mem: l3mem_mmap {
+			status = "okay";
+		};
+
+		aapmmap: aap_mmap {
+			status = "okay";
+		};
+
+		catson_pushpull_aap: pp_aap@0c220000 {
+			status = "okay";
+		};
+
+		catson_pushpull_aap_coeff: pp_aapc@0c221000 {
+			status = "okay";
+		};
+
+		dac_if: dac_if_mmap {
+			status = "okay";
+		};
+
+		adc_if: adc_if_mmap {
+			status = "okay";
+		};
+
+		xphy: xphy {
+			status = "okay";
+		};
+
+		catson_scp0: scp0@c700000 {
+			status = "okay";
+		};
+
+		syscfg2000: syscfg@0d000000 {
+			status = "okay";
+		};
+
+		telemetry_adc: sti_adc@8900000 {
+			status = "okay";
+		};
+
+		net_reserved_mem: net_reserved_mmap {
+			status = "okay";
+		};
+	};
+};

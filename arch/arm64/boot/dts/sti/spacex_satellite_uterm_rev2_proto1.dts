@@ -1,0 +1,112 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_cut2.dtsi"
+#include "spacex_satellite_uterm_production.dtsi"
+#include "spacex_satellite_uterm_imu_spi2.dtsi"
+
+/ {
+	gpios {
+		/*
+		 * GPS.
+		 */
+		gps_boot  = <&pio10 4 1>; /* 0=UART, 1=SPI  */
+		gps_reset = <&pio21 4 1>; /* 0=reset, 1=run */
+
+		/*
+		 * Reset.
+		 */
+		self_reset = <&pio23 0 1>;   /* 0=reset*/
+
+		/*
+		 * Antenna. (DBFs + FEMs)
+		 */
+		ant_power     = <&pio31 0 0>; /* 1=power 0.95/1.0/1.8V */
+
+		/*
+		 * Shiraz (digital beamformers).
+		 */
+		dbf_reset     = <&pio20 6 0>;
+		dbf_v0p9_ok   = <&pio31 1>;
+
+		/*
+		 * Pulsar (Front-End Modules).
+		 */
+		fem_v1p8_ok   = <&pio30 5>;
+
+		/*
+		 * Cady (clockgen).
+		 */
+		cady_power   = <&pio20 1 0>;
+		cady_v1p8_up = <&pio22 0 0>;
+
+		/*
+		 * Heaters. All Active HI.
+		 */
+		en_catson_heater1  = <&pio12 6 0>;
+		en_bus_heater2     = <&pio12 4 0>;
+		en_gps_heater3     = <&pio20 7 0>;
+		en_heater4         = <&pio21 6 0>;
+
+		/*
+		 * STSAFE reset, active low.
+		 */
+		stsafe_reset = <&pio32 4 0>;
+
+		/*
+		 * Watchdog toggle.  Must be toggled at least once in 144.
+		 * seconds.  Must stop toggling if self_reset is low.
+		 */
+		watchdog_toggle = <&pio31 6 0>;
+
+		/*
+		 * Actuator Control.  Motors reversed from schematic (1 -> 2).
+		 */
+		motor2_nsleep = <&pio30 2 0>; /* 0=sleep_mode */
+		motor2_ph     = <&pio31 5 0>; /* 0=reverse, 1=fwd */
+		motor2_nfault = <&pio30 1>;   /* 0=at_fault */
+
+		motor1_nsleep = <&pio31 7 0>; /* 0=sleep_mode */
+		motor1_ph     = <&pio31 4 0>; /* 0=reverse, 1=fwd */
+		motor1_nfault = <&pio32 1>;   /* 0=at_fault */
+	};
+
+	pwms {
+		/*
+		 * Adaptive voltage scaling.
+		 */
+		avs_core      = <&pwm0 0>;
+		avs_cpu       = <&pwm0 1>;
+	};
+
+	soc {
+		/*
+		 * ADC temp sensors, voltage, and current monitors.
+		 *
+		 * V2 has 2 muxes on channels 3 and 5.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			use-external = <0 0 0 0 0 0 1 1>;
+
+			mux-gpio = <&pio20 5 0>,
+				   <&pio20 0 0>,
+				   <&pio20 3 0>;
+
+			mux@3 {
+				input-channel = <3>;
+				vchan-count = <8>;
+			};
+			mux@5 {
+				input-channel = <5>;
+				vchan-count = <8>;
+			};
+		};
+	};
+};

@@ -1,0 +1,670 @@
+/*
+ * Copyright (C) 2016 STMicroelectronics Limited.
+ * Author: Carmelo Amoroso <carmelo.amoroso@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/ {
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+	cpus {
+		#address-cells = <2>;
+		#size-cells = <0>;
+
+		A53_0: cpu@0 {
+			compatible = "arm,cortex-a53", "arm,armv8";
+			device_type = "cpu";
+			reg = <0x0 0x0>;
+			next-level-cache = <&A53_L2>;
+		};
+
+		A53_1: cpu@1 {
+			compatible = "arm,cortex-a53", "arm,armv8";
+			device_type = "cpu";
+			reg = <0x0 0x1>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+		};
+
+		A53_2: cpu@2 {
+			compatible = "arm,cortex-a53", "arm,armv8";
+			device_type = "cpu";
+			reg = <0x0 0x2>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+		};
+
+		A53_3: cpu@3 {
+			compatible = "arm,cortex-a53", "arm,armv8";
+			device_type = "cpu";
+			reg = <0x0 0x3>;
+			enable-method = "psci";
+			next-level-cache = <&A53_L2>;
+		};
+
+		A53_L2: l2-cache0 {
+			compatible = "cache";
+		};
+	};
+
+	psci {
+		compatible = "arm,psci-1.0";
+		method = "smc";
+	};
+
+	gic: interrupt-controller@26110000 {
+		compatible = "arm,gic-400";
+		#interrupt-cells = <3>;
+		interrupt-controller;
+		reg = <0x0 0x26110000 0x1000>,	/* Distributor */
+		      <0x0 0x26120000 0x11000>;	/* CPU intf */
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+		interrupt-parent = <&gic>;
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+		always-on;
+	};
+
+	soc {
+		#address-cells = <2>;
+		#size-cells = <1>;
+		interrupt-parent = <&gic>;
+		ranges;
+		compatible = "simple-bus";
+
+		softreset: softreset-controller {
+			#reset-cells = <1>;
+			compatible = "st,gllcff-softreset";
+		};
+
+		/* Clock Gating */
+		backbone_dma0_fcgate: backbone_dma0_fcgate@14 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc0_backbone SYSCFG_5 0>;
+			#power-domain-cells = <0>;
+		};
+
+		flashss_spi1_fcgate: flashss_spi1_fcgate@11009 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc11_bootdev SYSCFG_11009 16>;
+			#power-domain-cells = <0>;
+		};
+
+		flashss_emmc_fcgate: flashss_emmc_fcgate@11010 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc11_bootdev SYSCFG_11010 16>;
+			#power-domain-cells = <0>;
+		};
+
+		flashss_spi2_fcgate: flashss_spi2_fcgate@11011 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc11_bootdev SYSCFG_11011 16>;
+			#power-domain-cells = <0>;
+		};
+
+		can_fcgate: can_fcgate@7005 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc7_bank1_connectivity SYSCFG_7005 0>;
+			#power-domain-cells = <0>;
+		};
+
+		gmac0_fcgate: gmac0_fcgate@7075 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc7_bank1_connectivity SYSCFG_7075 0>;
+			#power-domain-cells = <0>;
+		};
+
+		gmac1_fcgate: gmac1_fcgate@7085 {
+			compatible = "st,fcgate-pd";
+			st,syscfg = <&syscfg_fc7_bank1_connectivity SYSCFG_7085 0>;
+			#power-domain-cells = <0>;
+		};
+
+		/* FC_0 BACKBONE - Partition A peripherals */
+		pwm0: pwm@8800000 {
+			compatible = "st,sti-pwm";
+			status = "disabled";
+			#pwm-cells = <2>;
+			reg = <0x0 0x8800000 0x68>;
+			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_pwm_avs0_default
+				     &pinctrl_pwm_avs1_default
+				     &pinctrl_pwm2_default
+				     &pinctrl_pwm3_default>;
+			clock-names = "pwm";
+			clocks = <&clk_sysin>;
+
+			st,pwm-num-chan = <4>;
+		};
+
+		serial0: serial@8850000 {
+			compatible = "st,asc";
+			reg = <0x0 0x8850000 0x2f>;
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_serial0_default>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_0>;
+
+			status = "disabled";
+		};
+
+		serial1: serial@8860000 {
+			compatible = "st,asc";
+			reg = <0x0 0x8860000 0x2f>;
+			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_serial1_default>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+
+			status = "disabled";
+		};
+
+		i2c4@8910000 {
+			compatible = "st,comms-ssc4-i2c";
+			reg = <0x0 0x8910000 0x110>;
+			interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			clock-frequency = <400000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c4_default>;
+
+			status = "disabled";
+		};
+
+		spi4@8910000 {
+			compatible = "st,comms-ssc4-spi";
+			reg = <0x0 0x8910000 0x110>;
+			interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi4_default>;
+
+			status = "disabled";
+		};
+
+
+		/* FC_0 BACKBONE - Partition B peripherals */
+
+		i2c0@8810000 {
+			compatible = "st,comms-ssc4-i2c";
+			reg = <0x0 0x8810000 0x110>;
+			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			clock-frequency = <400000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c0_default>;
+
+			status = "disabled";
+		};
+
+		spi0@8810000 {
+			compatible = "st,comms-ssc4-spi";
+			reg = <0x0 0x8810000 0x110>;
+			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi0_default>;
+
+			status = "disabled";
+		};
+
+		i2c1@8820000 {
+			compatible = "st,comms-ssc4-i2c";
+			reg = <0x0 0x8820000 0x110>;
+			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			clock-frequency = <400000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c1_default>;
+
+			status = "disabled";
+		};
+
+		spi1@8820000 {
+			compatible = "st,comms-ssc4-spi";
+			reg = <0x0 0x8820000 0x110>;
+			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi1_default>;
+
+			status = "disabled";
+		};
+
+		i2c2@8830000 {
+			compatible = "st,comms-ssc4-i2c";
+			reg = <0x0 0x8830000 0x110>;
+			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			clock-frequency = <400000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c2_default>;
+
+			status = "disabled";
+		};
+
+		spi2@8830000 {
+			compatible = "st,comms-ssc4-spi";
+			reg = <0x0 0x8830000 0x110>;
+			interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi2_default>;
+
+			status = "disabled";
+		};
+
+		i2c3@8840000 {
+			compatible = "st,comms-ssc4-i2c";
+			reg = <0x0 0x8840000 0x110>;
+			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			clock-frequency = <400000>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_i2c3_default>;
+
+			status = "disabled";
+		};
+
+		spi3@8840000 {
+			compatible = "st,comms-ssc4-spi";
+			reg = <0x0 0x8840000 0x110>;
+			interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_s_c0_flexgen CLK_PERIPH_1>;
+			clock-names = "ssc";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_spi3_default>;
+
+			status = "disabled";
+		};
+
+		/* Supply voltage for I/O */
+		vqmmc0_reg: voltage-regulator0 {
+			compatible = "st,vqmmc";
+			regulator-name = "vqmmc0";
+			/* Control register for the VSENSE Module */
+			reg = <0x0 0x1e301804 0x4>;
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+
+			status = "disabled";
+		};
+
+		/* FC_11 BOOTDEV pheriperals */
+		mmc0: sdhci@1e300000 {
+			#address-cells = <2>;
+			#size-cells = <1>;
+			compatible = "st,sdhci", "st,sdhci-gllcff";
+			reg = <0x0 0x1e300000 0x7ff>,
+			      <0x0 0x1e301800 0x4>,
+			      <0x0 0x1e301808 0x24>;
+			reg-names = "mmc", "top-config", "top-mmc-delay";
+			interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "mmcirq";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_emmc0>;
+			clocks = <&clk_s_c0_flexgen CLK_ICN_BOOTDEV>,
+				 <&clk_s_c0_flexgen CLK_XIN_EMMC>;
+			clock-names = "emi_clk", "mmc";
+			non-removable;
+			st,flashss-version = <FLASHSS_CORE_VERSION_3_0>;
+			vqmmc-supply = <&vqmmc0_reg>;
+			power-domains = <&flashss_emmc_fcgate>;
+
+			bus-width = <8>;
+			max-frequency = <200000000>;
+			mmc-hs200-1_8v;
+
+			ranges;
+
+			status = "disabled";
+		};
+
+		spisfc0: spisfc@1e302000 {
+			compatible = "st,gllcff-sfc-revc";
+			reg = <0x0 0x1e302000 0x1000>;
+			reg-names = "sfc_mem";
+			clocks = <&clk_s_c0_flexgen CLK_ICN_BOOTDEV>, <&clk_s_c0_flexgen CLK_SPI>;
+			clock-names = "emi_clk", "sfc_clk";
+			pinctrl-0 = <&pinctrl_sfc0>;
+			pinctrl-names = "default";
+			interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "sfc_irq";
+			max-freq = <50000000>;
+			st,syscfg = <&syscfg_fc0_backbone>;
+			power-domains = <&flashss_spi1_fcgate>;
+			/* IBI are common to the 2 SFC controllers so only
+			 * one of them should have the IBI settings.
+			 * In case of only 1 SFC controller is used,
+			 * ibi_ipplugaxi_spi_rd_spi1_only and
+			 * ibi_ipplugaxi_spi_wr_spi1_only should be set
+			 * to the SFC controller being used
+			 */
+			ibi-0 = <&ibi_ipplugaxi_spi_rd_default>;
+			ibi-1 = <&ibi_ipplugaxi_spi_wr_default>;
+			ibi-names = "rd_ip_plug", "wr_ip_plug";
+
+			status = "disabled";
+		};
+
+		spisfc1: spisfc@1e303000 {
+			compatible = "st,gllcff-sfc-revc";
+			reg = <0x0 0x1e303000 0x1000>;
+			reg-names = "sfc_mem";
+			clocks = <&clk_s_c0_flexgen CLK_ICN_BOOTDEV>, <&clk_s_c0_flexgen CLK_SPI>;
+			clock-names = "emi_clk", "sfc_clk";
+			pinctrl-0 = <&pinctrl_sfc1>;
+			pinctrl-names = "default";
+			interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "sfc_irq";
+			max-freq = <50000000>;
+			st,syscfg = <&syscfg_fc0_backbone>;
+			power-domains = <&flashss_spi2_fcgate>;
+
+			status = "disabled";
+		};
+
+		trng: trng@22500000 {
+			compatible      = "st,rng-gllcff";
+			reg		= <0x0 0x22500000 0x1000>;
+			clocks          = <&clk_s_c0_flexgen CLK_PERIPH_0>;
+
+			status		= "disabled";
+		};
+
+		vtsens@8031000 {
+			compatible	= "st,vtsens-gllcff";
+			reg		= <0x0 0x8031000 0x1000>;
+			st,syscfg-calib	= <&syscfg_bsec>;
+			interrupts	= <GIC_SPI 115 IRQ_TYPE_EDGE_RISING>,
+					  <GIC_SPI 116 IRQ_TYPE_EDGE_RISING>,
+					  <GIC_SPI 117 IRQ_TYPE_EDGE_RISING>;
+			clocks		= <&clk_s_c0_flexgen CLK_PERIPH_0>;
+			clock-names	= "thermal";
+
+			status		= "okay";
+		};
+
+		l1l2sync: l1l2sync {
+			compatible  = "sx,simple-mmap";
+			status = "okay";
+			ranges = <0x08032000 0 0x08032000 0x1000>;
+
+			#address-cells = <1>;
+			#size-cells = <1>;
+			interrupts = <GIC_SPI 28 IRQ_TYPE_EDGE_RISING>;
+
+			pinctrl-0 = <&pinctrl_l1sync_default>;
+			pinctrl-names = "default";
+
+			l1l2sync {
+				reg = <0x08032000 0x1000>;
+			};
+		};
+
+		/* Synopsys DesignWare AXI DMA controller A415-0 */
+		dwA415dma0: dma0@8500000 {
+			compatible = "st,dw-axi-dmac-a415";
+			reg = <0x0 0x8500000 0x100000>;
+			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+
+			clocks = <&clk_s_c0_flexgen CLK_PROC_DMA>;
+			clock-names = "dma_clk";
+
+			resets = <&softreset GLLCFF_FC0_DMA0_RESET>;
+			reset-names = "dma-rst";
+
+			dma-channels = <8>;
+			osr-requests = <15>;
+			max-bus-width = <128>;	/* bits = 16bytes */
+			max-bus-burst = <1024>;	/* bytes */
+			/* max size for a single transfer (expressed
+			 * in blocks of bus width). Best case:
+			 *    0x400000 * 16 bytes = 64MB
+			 */
+			max-blk-per-tx = <0x400000>;
+			dma-masters = <2>;
+			data-width = <8 8>;
+			power-domains = <&backbone_dma0_fcgate>;
+
+			status = "disabled";
+		};
+
+		sram: sram@8030000 {
+			compatible = "st,sram-ecc";
+			reg = <0x0 0x8030000 0x1000>,
+			      <0x0 0x30200000 0x100000>;
+			reg-names =  "sysconf", "mem";
+			interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clk_sysin>;
+			clock-names = "timer";
+
+			status = "disabled";
+		};
+
+		ddr_edac: ddr_edac@8330000 {
+			compatible = "st,cadence-ddr-edac";
+			reg = <0x0 0x8330000 0x1000>;
+			reg-names =  "dbahn";
+			interrupts = <GIC_SPI 2 IRQ_TYPE_EDGE_RISING>;
+
+			status = "disabled";
+		};
+
+		ephy: ephy@16702100 {
+			compatible = "st,gllcff-ephy-phy";
+			#phy-cells = <1>;
+			st,syscfg = <&syscfg_fc2_modem>;
+			clocks = <&clk_s_c0_flexgen CLK_PHY_GMAC_0>;
+			resets = <&softreset GLLCFF_FC7_RST_EPHY_N>;
+			status = "disabled";
+		};
+
+		miphys1: miphy_s@16a00000 {
+			compatible = "st,gllcff-miphys1-phy";
+			reg = <0x0 0x16a00000 0x10000>;
+			#phy-cells = <1>;
+			st,syscfg = <&syscfg_fc7_bank1_connectivity>;
+			clocks = <&clk_sysin>;
+			clock-names = "miphy_osc";
+			#address-cells  = <2>;
+			#size-cells = <1>;
+			ranges;
+
+			/*
+			 * As a warning, polarity of this miphy is flipped
+			 * on HVK boards in SGMII mode.
+			 */
+
+			resets = <&softreset GLLCFF_FC7_RST_MIPHY_1_GLOBAL_N>,
+				 <&softreset GLLCFF_FC7_RST_MIPHY_1_OSC_N>,
+				 <&softreset GLLCFF_FC7_RST_SGMII_0_N>;
+			reset-names = "miphy-sw-rst", "miphy-osc-rst", "miphy-ln0-rst";
+			status = "disabled";
+		};
+
+		miphys2: miphy_s@16b00000 {
+			compatible = "st,gllcff-miphys2-phy";
+			reg = <0x0 0x16b00000 0x10000>;
+			#phy-cells = <1>;
+			st,syscfg = <&syscfg_fc7_bank1_connectivity>;
+			clocks = <&clk_sysin>;
+			clock-names = "miphy_osc";
+			#address-cells  = <2>;
+			#size-cells = <1>;
+			ranges;
+
+			resets = <&softreset GLLCFF_FC7_RST_MIPHY_2_GLOBAL_N>,
+				 <&softreset GLLCFF_FC7_RST_MIPHY_2_OSC_N>,
+				 <&softreset GLLCFF_FC7_RST_SGMII_1_N>;
+			reset-names = "miphy-sw-rst", "miphy-osc-rst", "miphy-ln0-rst";
+			status = "disabled";
+		};
+
+
+		ethernet0: dwmac@16700000 {
+			device_type = "network";
+			compatible = "st,gllcff-dwmac0", "st,gllcff-dwmac";
+			reg = <0x0 0x16700000 0x2100>;
+			reg-names = "stmmaceth";
+
+			/* The last reset entry is only necessary in case
+			 * of using the GMAC with the Embedded PHY
+			 */
+			resets = <&softreset GLLCFF_FC7_RST_GMAC_0_CTRL_N>,
+				 <&softreset GLLCFF_FC7_RST_GMAC_0_APP_N>;
+
+			reset-names = "gmac-global", "stmmaceth";
+
+			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 81 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 80 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
+
+			/* DMA Bus Mode */
+			snps,pbl = <8>;
+			/* AXI Bus mode - Burst len */
+			snps,burst_len = <0x00770009>;
+
+			clock-names = "stmmaceth", "pclk", "ptp_ref";
+			clocks = <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_0>,
+				 <&clk_s_c0_flexgen CLK_PERIPH_1>,
+				 <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_0>;
+			power-domains = <&gmac0_fcgate>;
+
+			status = "disabled";
+		};
+
+		ethernet1_axi_setup: stmmac-axi-config {
+			snps,rd_osr_lmt = <0x7>;
+			snps,wr_osr_lmt = <0x7>;
+			snps,blen = <16 0 0 0 0 0 0>;
+		};
+
+		ethernet1: dwmac@16800000 {
+			device_type = "network";
+			compatible = "st,gllcff-dwmac1", "st,gllcff-dwmac", "snps,dwmac";
+			reg = <0x0 0x16800000 0x2100>;
+			reg-names = "stmmaceth";
+
+			resets = <&softreset GLLCFF_FC7_RST_GMAC_1_CTRL_N>,
+				 <&softreset GLLCFF_FC7_RST_GMAC_1_APP_N>;
+
+			reset-names = "gmac-global", "stmmaceth";
+
+			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "macirq", "eth_wake_irq", "eth_lpi";
+
+			/* DMA Bus Mode */
+			snps,pbl = <8>;
+
+			/* AXI Bus mode */
+			snps,axi-config = <&ethernet1_axi_setup>;
+
+			clock-names = "stmmaceth", "pclk", "ptp_ref";
+			clocks = <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_1>,
+				 <&clk_s_c0_flexgen CLK_PERIPH_1>,
+				 <&clk_s_c0_flexgen CLK_PTP_REF_GMAC_1>;
+			power-domains = <&gmac1_fcgate>;
+
+			status = "disabled";
+		};
+
+		systrace: systrace@26300000 {
+			compatible = "st,systrace-cs500";
+
+			reg =	<0x0 0x26300000 0x100000>,
+				<0x0 0x26070000 0x1000>,
+				<0x0 0x26190000 0x1000>,
+				<0x0 0x26020000 0x1000>,
+				<0x0 0x26030000 0x1000>,
+				<0x0 0x26060000 0x1000>,
+				<0x0 0x26040000 0x1000>,
+				<0x0 0x26050000 0x1000>;
+
+			reg-names =
+				"stm-systrace-channels",
+				"stm-systrace-conf",
+				"tsgen-ro-systrace-conf",
+				"funnel-systrace-conf",
+				"etf-systrace-conf",
+				"rep-systrace-conf",
+				"etr-systrace-conf",
+				"tpiu-systrace-conf";
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&pinctrl_systrace_default>;
+
+			clock-names = "clk_tsgen", "clk_atb", "clk_trace";
+			clocks = <&clk_sysin>,
+				<&clk_s_c0_flexgen CLK_ATB>,
+				<&clk_s_c0_flexgen CLK_TPIU>;
+			clock-frequency = <10000000>;
+
+			status = "disabled";
+
+			systrace-phyconf {
+				cnf0 = <0x2624005c>, <0xa5a5a55a>, <1>, <0>;
+				cnf1 = <0x262400e4>, <0x01080000>, <1>, <1>;
+				cnf2 = <0x2624005c>, <0xa5a5a55a>, <1>, <0>;
+				cnf3 = <0x27018000>, <0x00000001>, <1>, <0>;
+				cnf4 = <0x27028000>, <0x00000001>, <1>, <0>;
+				cnf5 = <0x27038000>, <0x00000001>, <1>, <0>;
+				cnf6 = <0x27048000>, <0x00000001>, <1>, <0>;
+				cnf7 = <0x27058000>, <0x00000001>, <1>, <0>;
+			};
+
+			systrace-csconf {
+				rep0 = <2>;
+				ddr = <32768>;
+			};
+		};
+
+		/* boot reason */
+		boot_reason {
+			compatible = "st,boot-reason";
+			st,syscfg = <&syscfg_fc0_backbone SYSCFG_419 1 SYSCFG_420>;
+
+			status = "okay";
+		};
+
+		sbsa-wdt@261A0000 {
+			compatible = "arm,sbsa-refresh-gwdt";
+			reg = <0x0 0x261B0000 0xfd0>;	/* wdt refresh */
+			interrupts = <GIC_SPI 5 IRQ_TYPE_EDGE_RISING>;
+
+			status = "okay";
+		};
+
+		sti_adc@8900000 {
+			compatible = "st,sti-adc";
+			reg = <0x0 0x8900000 0x44>;
+			st,syscfg-calib	= <&syscfg_bsec>;
+			interrupts = <GIC_SPI 69 IRQ_TYPE_EDGE_RISING>;
+
+			status = "disabled";
+		};
+	};
+};

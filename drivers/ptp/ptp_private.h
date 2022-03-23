@@ -26,6 +26,20 @@ struct timestamp_event_queue {
 	spinlock_t lock;
 };
 
+/**
+ * struct ptp_alarm_attribute - Structure for holding an alarm value
+ * @time:	&struct ptp_clock_time for the alarm (all 0 = disabled)
+ * @dattr:	&struct device_attribute for the sysfs file
+ * @kn:		&struct kernfs_node for the sysfs file (used for notify)
+ * @name:	name of the sysfs file ("alarmNN"); length allows 2**32 alarms
+ */
+struct ptp_alarm_attribute {
+	struct ptp_clock_time time;
+	struct device_attribute dattr;
+	struct kernfs_node *kn;
+	char name[16];
+};
+
 struct ptp_clock {
 	struct posix_clock clock;
 	struct device dev;
@@ -38,6 +52,7 @@ struct ptp_clock {
 	struct mutex tsevq_mux; /* one process at a time reading the fifo */
 	struct mutex pincfg_mux; /* protect concurrent info->pin_config access */
 	wait_queue_head_t tsev_wq;
+	struct ptp_alarm_attribute *alarm_attrs;
 	int defunct; /* tells readers to go away when clock is being removed */
 	struct device_attribute *pin_dev_attr;
 	struct attribute **pin_attr;

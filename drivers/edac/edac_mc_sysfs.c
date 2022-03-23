@@ -24,8 +24,21 @@
 
 /* MC EDAC Controls, setable by module parameter, and sysfs */
 static int edac_mc_log_ue = 1;
+#ifndef CONFIG_SPACEX
 static int edac_mc_log_ce = 1;
 static int edac_mc_panic_on_ue;
+#else /* !CONFIG_SPACEX */
+/*
+ * Do not log correctable errors: displaying the message could cause a
+ * delay in a real-time thread and cause a desync.
+ */
+static int edac_mc_log_ce;
+
+/*
+ * Always panic on uncorrectable errors.
+ */
+static int edac_mc_panic_on_ue = 1;
+#endif /* CONFIG_SPACEX */
 static unsigned int edac_mc_poll_msec = 1000;
 
 /* Getter functions for above */

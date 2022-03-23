@@ -278,6 +278,11 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
 
 	/* Loop over the child nodes and register a phy_device for each phy */
 	for_each_available_child_of_node(np, child) {
+#ifdef CONFIG_SPACEX
+		if (of_node_name_eq(child, "fixed-link"))
+			continue;
+#endif
+
 		addr = of_mdio_parse_addr(&mdio->dev, child);
 		if (addr < 0) {
 			scanphys = true;

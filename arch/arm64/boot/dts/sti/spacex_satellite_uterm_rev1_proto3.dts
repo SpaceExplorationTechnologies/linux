@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_cut2.dtsi"
+#include "spacex_satellite_uterm_production.dtsi"
+#include "spacex_satellite_uterm_imu_spi2.dtsi"
+
+/ {
+	gpios {
+		/*
+		 * GPS.
+		 */
+		gps_boot      = <&pio10 4 1>; /* 0=UART, 1=SPI  */
+		gps_reset     = <&pio11 7 1>; /* 0=reset, 1=run */
+
+		/*
+		 * Reset.
+		 */
+		self_reset = <&pio21 5 1>;   /* 0=reset*/
+
+		/*
+		 * STSAFE reset, active low.
+		 */
+		stsafe_reset = <&pio21 6 0>;
+
+		/*
+		 * Watchdog disable.  1 = disabled
+		 */
+		watchdog_disable = <&pio31 0 0>;
+
+		/*
+		 * Watchdog toggle.  There is a pull-down resistor so a default
+		 * value of 0 doesn't count as the first toggle.
+		 */
+		watchdog_toggle = <&pio31 1 0>;
+
+		/*
+		 * Actuator Control.
+		 */
+		motor2_nsleep = <&pio20 7 0>; /* 0=sleep_mode */
+		motor2_ph     = <&pio20 6 0>; /* 0=reverse, 1=fwd */
+		motor2_nfault = <&pio20 3>;   /* 0=at_fault */
+
+		motor1_nsleep = <&pio20 0 0>; /* 0=sleep_mode */
+		motor1_ph     = <&pio20 5 0>; /* 0=reverse, 1=fwd */
+		motor1_nfault = <&pio22 2>;   /* 0=at_fault */
+	};
+
+	pwms {
+		/*
+		 * Adaptive voltage scaling.
+		 */
+		avs_core      = <&pwm0 0>;
+		avs_cpu       = <&pwm0 1>;
+	};
+
+	soc {
+		/*
+		 * ADC temp sensors, voltage, and current monitors.
+		 *
+		 * Proto1 has 2 muxes on channels 3 and 4.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			use-external = <0 0 0 0 0 0 0 1>;
+
+			mux-gpio = <&pio12 4 0>,
+				   <&pio12 6 0>,
+				   <&pio12 7 0>;
+
+			mux@3 {
+				input-channel = <3>;
+				vchan-count = <8>;
+			};
+			mux@4 {
+				input-channel = <4>;
+				vchan-count = <8>;
+			};
+		};
+	};
+};

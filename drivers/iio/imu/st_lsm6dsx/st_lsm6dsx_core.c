@@ -88,6 +88,13 @@ static const struct iio_chan_spec st_lsm6ds0_gyro_channels[] = {
 	IIO_CHAN_SOFT_TIMESTAMP(3),
 };
 
+#ifdef CONFIG_SPACEX
+static const struct iio_chan_spec st_lsm6dsx_temp_channels[] = {
+	ST_LSM6DSX_TEMP(IIO_TEMP, 0x20, 0),
+	IIO_CHAN_SOFT_TIMESTAMP(1),
+};
+#endif /* CONFIG_SPACEX */
+
 static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 	{
 		.wai = 0x68,
@@ -1149,6 +1156,10 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.hw_id = ST_LSM6DSRX_ID,
 				.name = ST_LSM6DSRX_DEV_NAME,
 			},
+			{
+				.hw_id = ST_ISM330DHC_ID,
+				.name = ST_ISM330DHC_DEV_NAME,
+			},
 		},
 		.channels = {
 			[ST_LSM6DSX_ID_ACC] = {
@@ -1159,6 +1170,12 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.chan = st_lsm6dsx_gyro_channels,
 				.len = ARRAY_SIZE(st_lsm6dsx_gyro_channels),
 			},
+#ifdef CONFIG_SPACEX
+			[ST_LSM6DSX_ID_TEMP] = {
+				.chan = st_lsm6dsx_temp_channels,
+				.len = ARRAY_SIZE(st_lsm6dsx_temp_channels),
+			},
+#endif /* CONFIG_SPACEX */
 		},
 		.drdy_mask = {
 			.addr = 0x13,
@@ -1193,6 +1210,17 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.odr_avl[6] = { 833000, 0x07 },
 				.odr_len = 7,
 			},
+#ifdef CONFIG_SPACEX
+			[ST_LSM6DSX_ID_TEMP] = {
+				.reg = {
+					.addr = 0x0A,
+					.mask = GENMASK(5, 4),
+				},
+				.odr_avl[0] = {  26000, 0x02 },
+				.odr_avl[1] = {  52000, 0x03 },
+				.odr_len = 2,
+			},
+#endif /* CONFIG_SPACEX */
 		},
 		.fs_table = {
 			[ST_LSM6DSX_ID_ACC] = {
@@ -1261,6 +1289,12 @@ static const struct st_lsm6dsx_settings st_lsm6dsx_sensor_settings[] = {
 				.addr = 0x09,
 				.mask = GENMASK(7, 4),
 			},
+#ifdef CONFIG_SPACEX
+			[ST_LSM6DSX_ID_TEMP] = {
+				.addr = 0x0A,
+				.mask = GENMASK(5, 4),
+			},
+#endif /* CONFIG_SPACEX */
 		},
 		.fifo_ops = {
 			.update_fifo = st_lsm6dsx_update_fifo,
@@ -1467,6 +1501,9 @@ st_lsm6dsx_set_odr(struct st_lsm6dsx_sensor *sensor, u32 req_odr)
 	switch (sensor->id) {
 	case ST_LSM6DSX_ID_GYRO:
 		break;
+#ifdef CONFIG_SPACEX
+	case ST_LSM6DSX_ID_TEMP:
+#endif /* CONFIG_SPACEX */
 	case ST_LSM6DSX_ID_EXT0:
 	case ST_LSM6DSX_ID_EXT1:
 	case ST_LSM6DSX_ID_EXT2:
@@ -1602,6 +1639,12 @@ static int st_lsm6dsx_read_raw(struct iio_dev *iio_dev,
 		*val2 = sensor->gain;
 		ret = IIO_VAL_INT_PLUS_NANO;
 		break;
+#ifdef CONFIG_SPACEX
+	case IIO_CHAN_INFO_OFFSET:
+		*val = sensor->offset;
+		ret = IIO_VAL_INT;
+		break;
+#endif /* CONFIG_SPACEX */
 	default:
 		ret = -EINVAL;
 		break;
@@ -1819,9 +1862,17 @@ st_lsm6dsx_sysfs_sampling_frequency_avail(struct device *dev,
 
 	odr_table = &sensor->hw->settings->odr_table[sensor->id];
 	for (i = 0; i < odr_table->odr_len; i++)
+#ifndef CONFIG_SPACEX
 		len += scnprintf(buf + len, PAGE_SIZE - len, "%d.%03d ",
 				 odr_table->odr_avl[i].milli_hz / 1000,
 				 odr_table->odr_avl[i].milli_hz % 1000);
+#else /* !CONFIG_SPACEX */
+		if (odr_table->odr_avl[i].milli_hz)
+			len += scnprintf(buf + len, PAGE_SIZE - len, "%d.%03d ",
+				 odr_table->odr_avl[i].milli_hz / 1000,
+				 odr_table->odr_avl[i].milli_hz % 1000);
+
+#endif /* CONFIG_SPACEX */
 	buf[len - 1] = '\n';
 
 	return len;
@@ -1908,6 +1959,24 @@ static const struct iio_info st_lsm6dsx_gyro_info = {
 	.hwfifo_set_watermark = st_lsm6dsx_set_watermark,
 	.write_raw_get_fmt = st_lsm6dsx_write_raw_get_fmt,
 };
+
+#ifdef CONFIG_SPACEX
+static struct attribute *st_lsm6dsx_temp_attributes[] = {
+	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
+	NULL,
+};
+
+static const struct attribute_group st_lsm6dsx_temp_attribute_group = {
+	.attrs = st_lsm6dsx_temp_attributes,
+};
+
+static const struct iio_info st_lsm6dsx_temp_info = {
+	.attrs = &st_lsm6dsx_temp_attribute_group,
+	.read_raw = st_lsm6dsx_read_raw,
+	.write_raw = st_lsm6dsx_write_raw,
+	.hwfifo_set_watermark = st_lsm6dsx_set_watermark,
+};
+#endif /* CONFIG_SPACEX */
 
 static int st_lsm6dsx_get_drdy_pin(struct st_lsm6dsx_hw *hw, int *drdy_pin)
 {
@@ -2169,21 +2238,45 @@ static struct iio_dev *st_lsm6dsx_alloc_iiodev(struct st_lsm6dsx_hw *hw,
 	struct st_lsm6dsx_sensor *sensor;
 	struct iio_dev *iio_dev;
 
+#ifdef CONFIG_SPACEX
+	if (WARN_ON(id >= ST_LSM6DSX_ODR_LIST_SIZE) ||
+	    WARN_ON(id >= ST_LSM6DSX_FS_LIST_SIZE))
+		return NULL;
+#endif /* CONFIG_SPACEX */
+
 	iio_dev = devm_iio_device_alloc(hw->dev, sizeof(*sensor));
 	if (!iio_dev)
 		return NULL;
 
 	iio_dev->modes = INDIO_DIRECT_MODE;
+
+#ifndef CONFIG_SPACEX
 	iio_dev->available_scan_masks = st_lsm6dsx_available_scan_masks;
+#endif /* !CONFIG_SPACEX */
 	iio_dev->channels = hw->settings->channels[id].chan;
 	iio_dev->num_channels = hw->settings->channels[id].len;
 
 	sensor = iio_priv(iio_dev);
 	sensor->id = id;
 	sensor->hw = hw;
-	sensor->odr = hw->settings->odr_table[id].odr_avl[0].milli_hz;
+#ifndef CONFIG_SPACEX
 	sensor->gain = hw->settings->fs_table[id].fs_avl[0].gain;
+#endif /* !CONFIG_SPACEX */
 	sensor->watermark = 1;
+
+#ifdef CONFIG_SPACEX
+	if (id == ST_LSM6DSX_ID_TEMP) {
+		/*
+		 * The temperature sensor has a fixed scale and offset such
+		 * that: temp_C = (raw / 256) + 25
+		 */
+		sensor->gain = 3906;
+		sensor->offset = 25;
+	} else {
+		sensor->gain = hw->settings->fs_table[id].fs_avl[0].gain;
+		iio_dev->available_scan_masks = st_lsm6dsx_available_scan_masks;
+	}
+#endif /* CONFIG_SPACEX */
 
 	switch (id) {
 	case ST_LSM6DSX_ID_ACC:
@@ -2196,6 +2289,13 @@ static struct iio_dev *st_lsm6dsx_alloc_iiodev(struct st_lsm6dsx_hw *hw,
 		scnprintf(sensor->name, sizeof(sensor->name), "%s_gyro",
 			  name);
 		break;
+#ifdef CONFIG_SPACEX
+	case ST_LSM6DSX_ID_TEMP:
+		iio_dev->info = &st_lsm6dsx_temp_info;
+		scnprintf(sensor->name, sizeof(sensor->name), "%s_temp",
+			  name);
+		break;
+#endif /* CONFIG_SPACEX */
 	default:
 		return NULL;
 	}

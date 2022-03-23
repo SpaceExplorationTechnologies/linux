@@ -243,6 +243,30 @@ config ARCH_SEATTLE
 	help
 	  This enables support for AMD Seattle SOC Family
 
+config ARCH_STI
+	bool "STMicroelectronics ARMv8 SOCs"
+	select ARCH_REQUIRE_GPIOLIB
+	select REGMAP
+	select PINCTRL
+	select PINCTRL_ST
+	select MFD_SYSCON
+	select PM_GENERIC_DOMAINS if PM
+	help
+	  This enables support for ARMv8 based STMicroelectronics SOC family.
+
+if ARCH_STI
+
+config SOC_GLLCFF
+	bool "GLLCFF STMicroelectronics Consumer Electronics SoC"
+	default y
+	select GLLCFF_RESET
+	select ARM_PSCI
+	help
+	  This enables support for STMicroelectronics Digital Consumer
+	  Electronics family GLLCFF parts.
+
+endif
+
 config ARCH_STRATIX10
 	bool "Altera's Stratix 10 SoCFPGA Family"
 	help

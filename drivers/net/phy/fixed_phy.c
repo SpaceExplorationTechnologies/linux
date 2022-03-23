@@ -254,7 +254,11 @@ static struct phy_device *__fixed_phy_register(unsigned int irq,
 		return ERR_PTR(ret);
 	}
 
+#ifndef CONFIG_SPACEX
 	phy = get_phy_device(fmb->mii_bus, phy_addr, false);
+#else
+	phy = phy_device_create(fmb->mii_bus, phy_addr, 0, false, NULL);
+#endif
 	if (IS_ERR(phy)) {
 		fixed_phy_del(phy_addr);
 		return ERR_PTR(-EINVAL);

@@ -60,6 +60,9 @@ void arch_stack_walk_user(stack_trace_consume_fn consume_entry, void *cookie,
 #else /* CONFIG_ARCH_STACKWALK */
 struct stack_trace {
 	unsigned int nr_entries, max_entries;
+#ifdef CONFIG_SPACEX
+	unsigned long *sp;
+#endif /* CONFIG_SPACEX */
 	unsigned long *entries;
 	unsigned int skip;	/* input argument: How many entries to skip */
 };
@@ -72,6 +75,7 @@ extern void save_stack_trace_tsk(struct task_struct *tsk,
 extern int save_stack_trace_tsk_reliable(struct task_struct *tsk,
 					 struct stack_trace *trace);
 extern void save_stack_trace_user(struct stack_trace *trace);
+
 #endif /* !CONFIG_ARCH_STACKWALK */
 #endif /* CONFIG_STACKTRACE */
 

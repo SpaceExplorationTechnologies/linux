@@ -197,6 +197,19 @@ void stmmac_dwmac4_set_mac_addr(void __iomem *ioaddr, u8 addr[6],
 }
 
 /* Enable disable MAC RX/TX */
+#ifdef CONFIG_SPACEX
+void stmmac_dwmac4_set_mac(void __iomem *ioaddr, bool enable, bool always_enable_mac_tx)
+{
+	u32 value = readl(ioaddr + GMAC_CONFIG);
+
+	if (enable)
+		value |= GMAC_CONFIG_RE | GMAC_CONFIG_TE;
+	else
+		value &= ~((always_enable_mac_tx ? 0 : GMAC_CONFIG_TE) | GMAC_CONFIG_RE);
+
+	writel(value, ioaddr + GMAC_CONFIG);
+}
+#else
 void stmmac_dwmac4_set_mac(void __iomem *ioaddr, bool enable)
 {
 	u32 value = readl(ioaddr + GMAC_CONFIG);
@@ -208,6 +221,7 @@ void stmmac_dwmac4_set_mac(void __iomem *ioaddr, bool enable)
 
 	writel(value, ioaddr + GMAC_CONFIG);
 }
+#endif
 
 void stmmac_dwmac4_get_mac_addr(void __iomem *ioaddr, unsigned char *addr,
 				unsigned int high, unsigned int low)

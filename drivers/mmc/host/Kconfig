@@ -473,6 +473,8 @@ config MMC_SDHCI_ST
 	depends on ARCH_STI || FSP2 || COMPILE_TEST
 	depends on MMC_SDHCI_PLTFM
 	select MMC_SDHCI_IO_ACCESSORS
+	select REGULATOR
+	select REGULATOR_ST_FLASHSS
 	help
 	  This selects the Secure Digital Host Controller Interface in
 	  STMicroelectronics SoCs.

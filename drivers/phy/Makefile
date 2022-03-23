@@ -29,5 +29,8 @@ obj-y					+= allwinner/	\
 					   socionext/	\
 					   st/		\
 					   tegra/	\
-					   ti/		\
-					   xilinx/
+					   xilinx/	\
+					   ti/
+obj-$(CONFIG_PHY_MIPHY_S)		+= phy-miphys.o
+obj-$(CONFIG_PHY_MIPHY_S)		+= phy-miphys.o
+obj-$(CONFIG_PHY_EPHY)			+= phy-ephy.o

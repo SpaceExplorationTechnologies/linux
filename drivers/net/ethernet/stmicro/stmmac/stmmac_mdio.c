@@ -333,12 +333,29 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 	}
 
 	/* Set the MII address register to write */
-	writel(data, priv->ioaddr + mii_data);
+	writel(phydata, priv->ioaddr + mii_data);
 	writel(value, priv->ioaddr + mii_address);
 
 	/* Wait until any existing MII operation is complete */
-	ret = readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
-				 100, 10000);
+	if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
+
+			       100, 10000)){
+		ret =  -EBUSY;
+		goto err_disable_clks;
+	}
+
+	/* Hardware workaround */
+	if (priv->plat->mdio_bus_data->write_repeat) {
+		writel(data, priv->ioaddr + mii_data);
+		writel(value, priv->ioaddr + mii_address);
+
+		/* Wait until any existing MII operation is complete */
+		if (readl_poll_timeout(priv->ioaddr + mii_address, v, !(v & MII_BUSY),
+				       100, 10000)) {
+			ret = -EBUSY;
+		}
+
+	}
 
 err_disable_clks:
 	pm_runtime_put(priv->device);
@@ -421,6 +438,14 @@ int stmmac_mdio_register(struct net_device *ndev)
 
 	if (mdio_bus_data->irqs)
 		memcpy(new_bus->irq, mdio_bus_data->irqs, sizeof(new_bus->irq));
+
+#ifdef CONFIG_OF
+	if (priv->device->of_node) {
+		struct device_node *np = priv->device->of_node;
+		mdio_bus_data->write_repeat = of_property_read_bool(np,
+					"st,mdio-write-repeat");
+	}
+#endif
 
 	new_bus->name = "stmmac";
 

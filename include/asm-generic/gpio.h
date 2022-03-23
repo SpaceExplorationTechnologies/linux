@@ -24,6 +24,10 @@
  * actually an estimate of a board-specific value.
  */
 
+#ifdef CONFIG_SPACEX
+#define ARCH_NR_GPIOS		65536
+#endif
+
 #ifndef ARCH_NR_GPIOS
 #if defined(CONFIG_ARCH_NR_GPIO) && CONFIG_ARCH_NR_GPIO > 0
 #define ARCH_NR_GPIOS CONFIG_ARCH_NR_GPIO

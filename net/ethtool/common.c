@@ -83,6 +83,9 @@ tunable_strings[__ETHTOOL_TUNABLE_COUNT][ETH_GSTRING_LEN] = {
 	[ETHTOOL_RX_COPYBREAK]	= "rx-copybreak",
 	[ETHTOOL_TX_COPYBREAK]	= "tx-copybreak",
 	[ETHTOOL_PFC_PREVENTION_TOUT] = "pfc-prevention-tout",
+#ifdef CONFIG_SPACEX
+	[ETHTOOL_LOCAL_LOOPBACK] = "local-loopback",
+#endif /* CONFIG_SPACEX */
 };
 
 const char

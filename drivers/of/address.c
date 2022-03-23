@@ -469,13 +469,15 @@ static int of_translate_one(struct device_node *parent, struct of_bus *bus,
 	ranges = of_get_property(parent, rprop, &rlen);
 	if (ranges == NULL && !of_empty_ranges_quirk(parent) &&
 	    strcmp(rprop, "dma-ranges")) {
-		pr_debug("no ranges; cannot translate\n");
+		pr_warn("%s no ranges; cannot translate\n",
+				of_node_full_name(parent));
 		return 1;
 	}
 	if (ranges == NULL || rlen == 0) {
 		offset = of_read_number(addr, na);
 		memset(addr, 0, pna * 4);
-		pr_debug("empty ranges; 1:1 translation\n");
+		pr_debug("%s empty ranges; 1:1 translation\n",
+				of_node_full_name(parent));
 		goto finish;
 	}
 

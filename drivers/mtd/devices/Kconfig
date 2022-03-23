@@ -208,6 +208,16 @@ config MTD_ST_SPI_FSM
 	  SPI Fast Sequence Mode (FSM) Serial Flash Controller and support
 	  for a subset of connected Serial Flash devices.
 
+config MTD_ST_SFC_C
+	tristate "ST Microelectronics Serial Flash Controller rev C"
+	depends on SOC_STID325 || SOC_STIH390 || SOC_GLLCFF
+	help
+	  This provides an MTD device driver for the ST Microelectronics
+	  Serial Flash Controller Rev C and support for a subset of connected
+	  Serial Flash devices.
+
+	  Set up your spi devices with the right board-specific platform data
+
 if MTD_DOCG3
 config BCH_CONST_M
 	default 14

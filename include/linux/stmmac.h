@@ -84,6 +84,9 @@ struct stmmac_mdio_bus_data {
 	int *irqs;
 	int probed_phy_irq;
 	bool needs_reset;
+#ifdef CONFIG_OF
+	int write_repeat;
+#endif
 };
 
 struct stmmac_dma_cfg {
@@ -203,5 +206,10 @@ struct plat_stmmacenet_data {
 	bool vlan_fail_q_en;
 	u8 vlan_fail_q;
 	unsigned int eee_usecs_rate;
+#ifdef CONFIG_SPACEX
+	bool disable_pcs;
+	bool disable_fcs;
+	bool always_enable_mac_tx;
+#endif
 };
 #endif

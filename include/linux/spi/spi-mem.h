@@ -126,6 +126,10 @@ struct spi_mem_op {
 			const void *out;
 		} buf;
 	} data;
+
+#ifdef CONFIG_SPACEX
+	u8 parallel_mode;
+#endif
 };
 
 #define SPI_MEM_OP(__cmd, __addr, __dummy, __data)		\
@@ -179,6 +183,13 @@ struct spi_mem_dirmap_desc {
 	void *priv;
 };
 
+#ifdef CONFIG_SPACEX
+enum spi_mem_option_flags {
+	SMEM_F_USE_DUAL_CHIP	= BIT(0),
+	SMEM_F_USE_STRIPE	= BIT(1),
+};
+#endif /* CONFIG_SPACEX */
+
 /**
  * struct spi_mem - describes a SPI memory device
  * @spi: the underlying SPI device
@@ -195,6 +206,9 @@ struct spi_mem {
 	struct spi_device *spi;
 	void *drvpriv;
 	const char *name;
+#ifdef CONFIG_SPACEX
+	u32 flags;
+#endif /* CONFIG_SPACEX */
 };
 
 /**
@@ -342,7 +356,11 @@ bool spi_mem_supports_op(struct spi_mem *mem,
 			 const struct spi_mem_op *op);
 
 int spi_mem_exec_op(struct spi_mem *mem,
+#ifndef CONFIG_SPACEX
 		    const struct spi_mem_op *op);
+#else /* !CONFIG_SPACEX */
+		    struct spi_mem_op *op);
+#endif /* CONFIG_SPACEX */
 
 const char *spi_mem_get_name(struct spi_mem *mem);
 

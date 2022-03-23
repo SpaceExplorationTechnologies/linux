@@ -291,7 +291,11 @@ struct stmmac_ops {
 	/* MAC core initialization */
 	void (*core_init)(struct mac_device_info *hw, struct net_device *dev);
 	/* Enable the MAC RX/TX */
+#ifdef CONFIG_SPACEX
+	void (*set_mac)(void __iomem *ioaddr, bool enable, bool always_enable_mac_tx);
+#else
 	void (*set_mac)(void __iomem *ioaddr, bool enable);
+#endif
 	/* Enable and verify that the IPC module is supported */
 	int (*rx_ipc)(struct mac_device_info *hw);
 	/* Enable RX Queues */

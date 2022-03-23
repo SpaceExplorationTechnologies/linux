@@ -185,6 +185,18 @@ static __always_inline u64 __arch_counter_get_cntpct(void)
 	return cnt;
 }
 
+#ifdef CONFIG_SPACEX
+/* Allow use of cntpct for time-passing from u-boot */
+static __always_inline u64 __arch_counter_get_cntvct_stable(void)
+{
+	u64 cval;
+
+	isb();
+	asm volatile("mrs %0, cntpct_el0" : "=r"(cval));
+
+	return cval;
+}
+#else
 static __always_inline u64 __arch_counter_get_cntvct_stable(void)
 {
 	u64 cnt;
@@ -194,6 +206,7 @@ static __always_inline u64 __arch_counter_get_cntvct_stable(void)
 	arch_counter_enforce_ordering(cnt);
 	return cnt;
 }
+#endif
 
 static __always_inline u64 __arch_counter_get_cntvct(void)
 {

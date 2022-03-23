@@ -1,0 +1,624 @@
+/*
+ * SpaceX IP Catson Device Tree
+ *
+ * spacex_catson_socip_common.dtsi
+ *
+ * SpaceX IP entries. Common between Cut 3 and Cut 4.
+ *
+ * Entries in the primary dts file are required to enable these
+ * peripherals and assign them to appropriate driver instances.
+ */
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+
+/ {
+soc {
+	pmu {
+		compatible = "arm,cortex-a53-pmu";
+	};
+
+	catson_fuses {
+		compatible = "sx,catson-fuse-1.00.a";
+		reg = < 0 0x22400000 0x1000 >;
+	};
+
+	modem_rx: modem_rx_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c000000 0 0x0c000000 0x00100000>;
+
+		modem_rx {
+			reg = <0x0c000000 0x20000>;
+		};
+
+		modem_rx_ipp {
+			reg = <0x0c030000 0x3000>;
+		};
+	};
+
+	modem_rx_proc_irq0: modem_rx_irq_0 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 140 4>;
+	};
+
+	modem_rx_proc_irq1: modem_rx_irq_1 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 141 4>;
+	};
+
+	modem_rx_proc_irq2: modem_rx_irq_2 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 142 4>;
+	};
+
+	modem_rx_axi_irq0: modem_rx_irq_3 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 143 4>;
+	};
+
+	modem_rx_axi_irq1: modem_rx_irq_4 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 144 4>;
+	};
+
+	modem_rx_axi_irq2: modem_rx_irq_5 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 145 4>;
+	};
+
+	modem_rx_push_irq0: modem_rx_irq_13 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 153 4>;
+	};
+
+	modem_rx_push_irq1: modem_rx_irq_14 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 154 4>;
+	};
+
+	modem_rx_pu_irq: modem_rx_irq_15 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 155 4>;
+	};
+
+	modem_tx_proc_irq0: modem_tx_irq_0 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 156 4>;
+	};
+
+	modem_tx_proc_irq1: modem_tx_irq_1 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 157 4>;
+	};
+
+	modem_tx_proc_irq2: modem_tx_irq_2 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 158 4>;
+	};
+
+	modem_tx_proc_irq8: modem_tx_irq_8 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 164 4>;
+	};
+
+	modem_tx_axi_irq0: modem_tx_irq_3 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 159 4>;
+	};
+
+	modem_tx_axi_irq1: modem_tx_irq_4 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 160 4>;
+	};
+
+	modem_tx_axi_irq2: modem_tx_irq_5 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 161 4>;
+	};
+
+	modem_tx_push_irq0: modem_tx_irq_13 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 169 4>;
+	};
+
+	modem_tx_push_irq1: modem_tx_irq_14 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 170 4>;
+	};
+
+	modem_tx_pull_irq: modem_tx_irq_15 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 171 4>;
+	};
+
+	tx_l2_proc_dma_pull_irq0: network_ip_0 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 174 4>;
+	};
+
+	tx_l2_proc_dma_pull_irq1: network_ip_1 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 175 4>;
+	};
+
+	tx_l2_proc_dma_push_irq_intc: network_ip_2_intc {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 176 4>;
+		compatible = "sx,catson-modem-intc-2.00";
+		reg = <0 0x0C200000 0x1000>;
+		irq-regs = <0xcc>; /* INTR0_STATUS */
+	};
+
+	tx_l2_proc_dma_push_b0_almost_full: network_ip_2_intc11 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&tx_l2_proc_dma_push_irq_intc>;
+		interrupts = <11>;
+	};
+
+	tx_l2_proc_dma_push_b1_almost_full: network_ip_2_intc12 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&tx_l2_proc_dma_push_irq_intc>;
+		interrupts = <12>;
+	};
+
+	rx_l2_proc_dma_pull_irq: network_ip_3 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 177 4>;
+	};
+
+	rx_l2_proc_dma_push_irq0: network_ip_4 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 178 4>;
+	};
+
+	rx_l2_proc_dma_push_irq1: network_ip_5 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 179 4>;
+	};
+
+	network_common: network_common {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges ;
+
+		common {
+			reg = <0x0c208000 0x1000>;
+		};
+	};
+
+	tx_l2_proc_dma_pull_irq0: network_ip_0 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 174 4>;
+	};
+
+	tx_l2_proc_dma_pull_irq1: network_ip_1 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 175 4>;
+	};
+
+	tx_l2_proc_dma_push_irq: network_ip_2 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 176 4>;
+	};
+
+	rx_l2_proc_dma_pull_irq: network_ip_3 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 177 4>;
+	};
+
+	rx_l2_proc_dma_push_irq0: network_ip_4 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 178 4>;
+	};
+
+	rx_l2_proc_dma_push_irq1: network_ip_5 {
+		status = "disabled";
+		compatible = "generic-uio";
+		interrupt-parent = <&gic>;
+		interrupts = <0 179 4>;
+	};
+
+	network_common: network_common {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges ;
+
+		common {
+			reg = <0x0c208000 0x1000>;
+		};
+	};
+
+	/* L3 UL PUSH + L3 DL PULL */
+	catson_pushpull_l3gmac: pp_l3gmac@0c20c000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-net-2.00a";
+		suffix = "l3_gmac";
+
+		reg =  <0 0x0c20c000 0x1000
+			0 0x0c20b000 0x1000 >;
+
+		interrupt-parent = <&gic>;
+		interrupts = < 0 183 4
+				   0 180 4 >;
+
+		desc-type = "l3gmac_net";
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Power of 2 roundup of maximum ethernet frame (1522) */
+			buffer-size = <2048>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Power of 2 roundup of maximum ethernet frame (1522) */
+			buffer-size = <2048>;
+		};
+	}; /* L3 GMAC */
+
+	/* L3 DL PUSH + L3 UL PULL */
+	catson_pushpull_uplink: catson_pushpull_uplink {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-2.00a";
+		suffix = "cl3ul";
+
+		reg = < 0 0x0c20d000 0x1000
+			0 0x0c20a000 0x1000 >;
+
+		interrupt-parent = <&gic>;
+		interrupts = < 0 181 4
+			       0 182 4 >;
+
+		desc-type = "cl3ul";
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Large enough for SpaceX header + IP packet */
+			buffer-size = <2048>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Large enough for SpaceX header + IP packet */
+			buffer-size = <2048>;
+		};
+	}; /* L3 Uplink Pushpull */
+
+	cfemmap: cfe_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c210000 0 0x0c210000 0xc000>;
+
+		cfe_common {
+			reg = <0x0c210000 0x1000>;
+		};
+
+		cfe_flow_ctrl {
+			reg = <0x0c21b000 0x1000>;
+		};
+	};
+
+	catson_pushpull_cfe_scp: pp_cfe_scp@0c212000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-net-2.00a";
+		suffix = "scp";
+
+		phys = <&miphys1 PHY_TYPE_MDML>, <&miphys2 PHY_TYPE_MDML>;
+		phy-names = "catson-phy", "fcnet-phy";
+
+		reg = < 0 0x0c212000 0x1000
+			0 0x0c217000 0x1000 >;
+
+		interrupt-parent = <&cfe_scp_intc>;
+		interrupts = < 1 0 >;
+
+		/* Link ID used for transmit */
+		link-id = <0x0>;
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Power of 2 roundup of maximum ethernet frame (1522) */
+			buffer-size = <2048>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Power of 2 roundup of maximum ethernet frame (1522) */
+			buffer-size = <2048>;
+		};
+	}; /* SCP Pushpull */
+
+	catson_pushpull_cfe_c2dc: pp_cfe_c2dc@0c214000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-net-2.00a";
+		suffix = "dc";
+
+		phys = <&miphys1 PHY_TYPE_MDML>;
+		phy-names = "catson-phy";
+
+		/* Link ID used for transmit */
+		link-id = <0x0>;
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+		};
+	}; /* C2DC Pushpull */
+
+	catson_pushpull_cfe_c2uc: pp_cfe_c2uc@0c215000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-net-2.00a";
+		suffix = "uc";
+
+		phys = <&miphys2 PHY_TYPE_MDML>;
+		phy-names = "fcnet-phy";
+
+		/* Link ID used for transmit */
+		link-id = <0x0>;
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+		};
+	}; /* C2UC Pushpull */
+
+	catson_pushpull_aap: pp_aap@0c220000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-2.00a";
+		suffix = "aap";
+
+		desc-type = "aap";
+
+		push {
+			fifo-depth = <1024>;
+
+			buffer-size = <1024>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <1024>;
+		};
+	}; /* AAP Common Pushpull */
+
+	catson_pushpull_aap_coeff: pp_aapc@0c221000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-2.00a";
+		suffix = "aap_coeff";
+
+		desc-type = "aap";
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <1024>;
+		};
+	}; /* AAP Coeff Pushpull */
+
+	cfe_scp_intc: cfe_scp_intc@0c231000 {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		compatible = "sx,catson-intc-2.00";
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 185 4>;
+		reg = <0 0x0c231000 0x1000>;
+		sx,intr-count = <0x2>;
+	};
+
+	dac_if: dac_if_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c300000 0 0x0c300000 0x100000>;
+
+		syscfg_dac {
+			reg = <0x0c300000 0x1000>;
+		};
+	};
+
+	adc_if: adc_if_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c400000 0 0x0c400000 0x200000>;
+
+		syscfg_adc {
+			reg = <0x0c400000 0x1000>;
+		};
+
+		modem_adc {
+			reg = <0x0c500000 0x1000>;
+		};
+	};
+
+	xphy: xphy {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c600000 0 0x0c600000 0x100000>;
+
+		cs0 {
+			/* Clock slice 0 @ 0x000 */
+			reg = <0x0c600000 0x400>;
+		};
+		ds0_0 {
+			/* Data  slice 0 @ 0x400 */
+			reg = <0x0c600400 0x400>;
+		};
+	};
+
+	scpmmap: scp_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c700000 0 0x0c700000 0x100000>;
+
+		scp {
+			reg = <0x0c700000 0x1000>;
+		};
+	};
+
+	catson_scp0: scp0@c700000 {
+		status = "disabled";
+		compatible = "sx,catson-scp-1.0";
+
+		reg = <0x0 0xc700000 0x2000>;
+
+		interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>; /* scp_master */
+
+		resets = <&softreset GLLCFF_FC2_RST_SCP_MASTER_N>;
+		reset-names = "scp-master-rst";
+
+		link-speed = <0>;
+
+		rx-buffer-count = <1024>;
+		tx-buffer-count = <1024>;
+
+		/* Limit transfer sizes to one memory page */
+		rx-buffer-size = <4096>;
+		tx-buffer-size = <4096>;
+
+		rx-desc-count = <256>;
+		tx-desc-count = <256>;
+
+		rx-timeout = <100000>;
+	};
+
+	syscfg2000: syscfg@0d000000 {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0d000000 0 0x0d000000 0x200000>;
+
+		syscfg {
+			reg = <0x0d000000 0x1000>;
+		};
+	};
+
+	net_reserved_mem: net_reserved_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x90000000 0 0x90000000 0x10000000>;
+		is-cached;
+		no-dma;
+
+		net_reserved_mem {
+			reg = <0x90000000 0x10000000>;
+		};
+	};
+
+	catson_one_pps {
+		status = "disabled";
+		compatible = "sx,catson-one-pps-1.00";
+		clocks = <&clk_s_c0_flexgen CLK_1PPS>,
+				<&clk_s_c0_flexgen CLK_TSP>;
+		clock-names = "pps", "tsp";
+	};
+}; /* soc */
+};

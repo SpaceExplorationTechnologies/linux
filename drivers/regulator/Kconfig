@@ -1279,5 +1279,11 @@ config REGULATOR_QCOM_LABIBB
 	  boost regulator and IBB can be used as a negative boost regulator
 	  for LCD display panel.
 
+#
+# SDHCI ST controller needs a dedicate Voltage regulator, however it is
+# not necessary to expose via menuconfig.
+#
+config REGULATOR_ST_FLASHSS
+	def_tristate MMC_SDHCI_ST
+	depends on ARCH_STI && OF
 endif
-

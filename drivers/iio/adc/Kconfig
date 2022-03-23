@@ -909,6 +909,16 @@ config SD_ADC_MODULATOR
 	  This driver can also be built as a module.  If so, the module
 	  will be called sd_adc_modulator.
 
+config STI_ADC
+	tristate "ADC driver for STMicroelectronics STi series SoCs"
+	depends on ARCH_STI
+	help
+	  Say yes to build the driver for ADC controller on STMicroelectronics
+	  STi series SoC.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called sti_adc.
+
 config STM32_ADC_CORE
 	tristate "STMicroelectronics STM32 adc core"
 	depends on ARCH_STM32 || COMPILE_TEST

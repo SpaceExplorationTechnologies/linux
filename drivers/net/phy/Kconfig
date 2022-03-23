@@ -168,6 +168,11 @@ config DAVICOM_PHY
 	help
 	  Currently supports dm9161e and dm9131
 
+config STI_EPHY_PHY
+	tristate "Driver for ST Microelectronics Embedded PHY"
+	help
+	  Supports the ST Microelectronics Embedded PHY.
+
 config ICPLUS_PHY
 	tristate "ICPlus PHYs"
 	help
@@ -195,6 +200,11 @@ config MARVELL_PHY
 	tristate "Marvell Alaska PHYs"
 	help
 	  Currently has a driver for the 88E1XXX
+
+config MARVELL_SWITCH_NORMAL
+	tristate "Marvell 88eXXXX switch with normal non-DSA config"
+	help
+	  Currently has a driver for the 88E6420
 
 config MARVELL_10G_PHY
 	tristate "Marvell Alaska 10Gbit PHYs"
@@ -319,3 +329,18 @@ endif # PHYLIB
 config MICREL_KS8995MA
 	tristate "Micrel KS8995MA 5-ports 10/100 managed Ethernet switch"
 	depends on SPI
+
+config RTL8366_SMI
+	tristate "Driver for the RTL8366 SMI interface"
+	help
+	  This module implements the SMI interface protocol which is used
+	  by some RTL8366 ethernet switch devices via the generic GPIO API.
+
+config RTL8366_SMI_DEBUG_FS
+	bool "RTL8366 switch driver DEBUG_FS support"
+	depends on DEBUG_FS && RTL8366_SMI
+	default n
+
+config RTL8367_PHY
+	tristate "Driver for the Realtek RTL8367R/M switches"
+	depends on RTL8366_SMI

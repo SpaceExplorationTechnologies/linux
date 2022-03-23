@@ -47,6 +47,10 @@
 #include <linux/livepatch.h>
 #include <linux/cgroup.h>
 #include <linux/audit.h>
+#ifdef CONFIG_SPACEX
+#include <linux/stacktrace.h>
+#define MAX_STACK_TRACE_DEPTH	64
+#endif /* CONFIG_SPACEX */
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/signal.h>
@@ -1304,6 +1308,11 @@ static int send_signal(int sig, struct kernel_siginfo *info, struct task_struct 
 
 static void print_fatal_signal(int signr)
 {
+#if defined(CONFIG_SPACEX) && defined(CONFIG_USER_STACKTRACE_SUPPORT)
+	unsigned long *store;
+	unsigned int len;
+#endif /* CONFIG_SPACEX && CONFIG_USER_STACKTRACE_SUPPORT */
+
 	struct pt_regs *regs = signal_pt_regs();
 	pr_info("potentially unexpected fatal signal %d.\n", signr);
 
@@ -1324,6 +1333,23 @@ static void print_fatal_signal(int signr)
 	preempt_disable();
 	show_regs(regs);
 	preempt_enable();
+
+#if defined(CONFIG_SPACEX) && defined(CONFIG_USER_STACKTRACE_SUPPORT)
+	printk("Call Trace:\n");
+
+	/*
+	 * The call to show_regs() only displays the backtrace when
+	 * called on threads running in the kernel.
+	 */
+	store = kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(*store), GFP_ATOMIC);
+	WARN(!store, "Not enough memory to print a backtrace.\n");
+
+	if (store) {
+		len = stack_trace_save_user(store, MAX_STACK_TRACE_DEPTH);
+		stack_trace_print(store, len, 2);
+		kfree(store);
+	}
+#endif /* CONFIG_SPACEX && CONFIG_USER_STACKTRACE_SUPPORT */
 }
 
 static int __init setup_print_fatal_signals(char *str)

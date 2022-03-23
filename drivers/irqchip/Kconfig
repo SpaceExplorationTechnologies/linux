@@ -597,5 +597,8 @@ config MST_IRQ
 	select IRQ_DOMAIN_HIERARCHY
 	help
 	  Support MStar Interrupt Controller.
+config SX_CATSON_INTC
+	bool "SpaceX Catson Interrupt Expander"
+	select IRQ_DOMAIN
 
 endmenu

@@ -29,6 +29,9 @@
 #include <linux/numa.h>
 #include <linux/sched/isolation.h>
 #include <trace/events/sched.h>
+#ifdef CONFIG_SPACEX
+#include <linux/cn_proc.h>
+#endif /* CONFIG_SPACEX */
 
 
 static DEFINE_SPINLOCK(kthread_create_lock);
@@ -407,6 +410,9 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
 		 */
 		vsnprintf(name, sizeof(name), namefmt, args);
 		set_task_comm(task, name);
+#ifdef CONFIG_SPACEX
+		proc_comm_connector(task);
+#endif /* CONFIG_SPACEX */
 	}
 	kfree(create);
 	return task;

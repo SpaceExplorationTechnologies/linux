@@ -1,0 +1,124 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "spacex_satellite_user_terminal";
+
+	aliases {
+		i2c4 = &i2c4;
+	};
+
+	gpios {
+		/*
+		 * WiFi.
+		 */
+		wifi_reset    = <&pio11 4 1>; /* 0=reset */
+
+		/*
+		 * Reset changes depending on board revision - it is set in
+		 * the board-specific files.
+		 */
+
+		/*
+		 * Antenna. (DBFs + FEMs)
+		 */
+		ant_power     = <&pio30 5 0>; /* 1=power 0.95/1.0/1.8V */
+
+		/*
+		 * Shiraz. (DBFs)
+		 */
+		dbf_reset     = <&pio21 4 1>; /* 1=reset shiraz */
+		dbf_v1p0_ok   = <&pio31 2>;
+
+		/*
+		 * Cady.
+		 */
+		cady_power    = <&pio11 5 0>; /* 0=off, 1=on */
+		cady_v2p2_up  = <&pio21 7 0>; /* 0=2.2V, 1=2.6V */
+		cady_v1p8_up  = <&pio10 5 0>; /* 0=1.8V, 1=2.2V */
+
+		/*
+		 * Board ID.
+		 * See Confluence "User Terminal Catson ID Bits"
+		 */
+		id_b0         = <&pio12 2>;
+		id_b1         = <&pio12 3>;
+		id_b2         = <&pio12 0>;
+		id_b3         = <&pio12 1>;
+		id_b4         = <&pio20 4>;
+	};
+
+	pwms {
+		/*
+		 * Actuator control motors.
+		 */
+		motor2        = <&pwm0 3>;
+		motor1        = <&pwm0 2>;
+	};
+
+	soc {
+		/*
+		 * Motor PWM control.
+		 */
+		pwm@8800000 {
+			status = "okay";
+			st,max-pwm-cnt = <0xFFFF>;
+		};
+
+		/*
+		 * Configure SCP-lite GPIO pin.
+		 */
+		catson_scp0: scp0@c700000 {
+			pinctrl-0 = <&pinctrl_scp_lite_default>;
+			pinctrl-names = "default";
+		};
+
+		/*
+		 * Configure l1s2sync to use only the outa pin.
+		 */
+		l1l2sync: l1l2sync {
+			pinctrl-0 = <&pinctrl_l1sync_outa &pinctrl_gps_1pps>;
+		};
+
+		/*
+		 * Configure serial to only use tx and rx lines.
+		 */
+		serial0: serial@8850000 {
+			pinctrl-0 = <&pinctrl_serial0_txrx>;
+		};
+
+		serial1: serial@8860000 {
+			pinctrl-0 = <&pinctrl_serial1_txrx>;
+		};
+
+		/*
+		 * ePHY LEDs.
+		 */
+		ephy: ephy@16702100 {
+			pinctrl-names = "default";
+			pinctrl-0 = <&ephy_led_alt>;
+		};
+
+		/*
+		 * ADC temp sensors, voltage, and current monitors.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			vref-external = <1800>; /* 1.8v external reference */
+		};
+
+		/*
+		 * I2C4 (SCL:PIO23[3],SDA:PIO23[4]) for talking to STSAFE IC.
+		 */
+		i2c4: i2c4@8910000 {
+			status = "okay";
+		};
+	};
+};

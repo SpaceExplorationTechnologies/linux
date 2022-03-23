@@ -5,5 +5,6 @@
 #define MDIO_GPIO_MDC	0
 #define MDIO_GPIO_MDIO	1
 #define MDIO_GPIO_MDO	2
+#define MDIO_GPIO_MDOE  3
 
 #endif

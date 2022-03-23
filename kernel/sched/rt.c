@@ -946,7 +946,11 @@ static inline int rt_se_prio(struct sched_rt_entity *rt_se)
 	return rt_task_of(rt_se)->prio;
 }
 
+#ifndef CONFIG_SPACEX
 static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+#else
+static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq, struct task_struct *curr)
+#endif
 {
 	u64 runtime = sched_rt_runtime(rt_rq);
 
@@ -970,7 +974,12 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		 */
 		if (likely(rt_b->rt_runtime)) {
 			rt_rq->rt_throttled = 1;
+#ifndef CONFIG_SPACEX
 			printk_deferred_once("sched: RT throttling activated\n");
+#else
+			printk_deferred_once("sched: RT throttling activated (curr: pid %d, comm %s)\n",
+						curr->pid, curr->comm);
+#endif
 		} else {
 			/*
 			 * In case we did anyway, make it go away,
@@ -1026,7 +1035,11 @@ static void update_curr_rt(struct rq *rq)
 		if (sched_rt_runtime(rt_rq) != RUNTIME_INF) {
 			raw_spin_lock(&rt_rq->rt_runtime_lock);
 			rt_rq->rt_time += delta_exec;
+#ifndef CONFIG_SPACEX
 			if (sched_rt_runtime_exceeded(rt_rq))
+#else
+			if (sched_rt_runtime_exceeded(rt_rq, curr))
+#endif
 				resched_curr(rq);
 			raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		}

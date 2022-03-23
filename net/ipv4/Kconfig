@@ -229,6 +229,31 @@ config IP_MROUTE
 	  likely run the program mrouted. If you haven't heard about it, you
 	  don't need it.
 
+config IP_MROUTE_NO_ALLMULTI
+	bool "IP: opt-out of receive-all-multicast mode for multicast routing"
+	depends on IP_MROUTE
+	help
+	  This disables implicitly setting receive-all-multicast (ALLMULTI)
+	  mode on network interfaces that are registered as multicast-routable.
+	  If you leave the default behavior (do not opt-out), the network
+	  interface(s) will receive into the kernel all the multicast packets
+	  that arrive at the interface hardware, even if nothing in userspace
+	  subscribed to them.
+
+	  It is safe to leave this at the default (do not opt-out) at the
+	  expense of possible higher CPU and interrupt load. If you are
+	  attached to a non-IGMP switch, and your multicast routing daemon does
+	  not subscribe to the multicast groups it routes, you must say N here.
+	  (In that case, we recommend updating your multicast routing daemon.)
+
+	  On the other hand, if your network interfaces support hardware-level
+	  multicast filtering, your multicast routing daemon subscribes to
+	  all the groups it routes, and you are connected to a switch that
+	  does not do IGMP (i.e., it treats multicast as broadcast), you can
+	  say Y here to save CPU and interrupt load.
+
+	  If unsure, say N.
+
 config IP_MROUTE_MULTIPLE_TABLES
 	bool "IP: multicast policy routing"
 	depends on IP_MROUTE && IP_ADVANCED_ROUTER

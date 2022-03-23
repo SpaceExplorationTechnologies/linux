@@ -940,6 +940,39 @@ void kernfs_notify(struct kernfs_node *kn)
 }
 EXPORT_SYMBOL_GPL(kernfs_notify);
 
+/**
+ * kernfs_notify_poll - immediately notify a kernfs file and bypass fsnotify
+ * @kn: file to notify
+ *
+ * Notify @kn such that poll(2) on @kn wakes up.  Maybe be called from any
+ * context.
+ */
+void kernfs_notify_poll(struct kernfs_node *kn)
+{
+	struct kernfs_open_node *on;
+#ifdef CONFIG_SPACEX
+	unsigned long flags;
+
+	spin_lock_irqsave(&kernfs_open_node_lock, flags);
+#else /* CONFIG_SPACEX */
+	/* kick poll */
+	spin_lock_irq(&kernfs_open_node_lock);
+#endif /* CONFIG_SPACEX */
+
+	on = kn->attr.open;
+	if (on) {
+		atomic_inc(&on->event);
+		wake_up_interruptible(&on->poll);
+	}
+
+#ifdef CONFIG_SPACEX
+	spin_unlock_irqrestore(&kernfs_open_node_lock, flags);
+#else /* CONFIG_SPACEX */
+	spin_unlock_irq(&kernfs_open_node_lock);
+#endif
+}
+EXPORT_SYMBOL_GPL(kernfs_notify_poll);
+
 const struct file_operations kernfs_file_fops = {
 	.read_iter	= kernfs_fop_read_iter,
 	.write_iter	= kernfs_fop_write_iter,

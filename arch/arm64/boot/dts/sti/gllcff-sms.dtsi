@@ -1,0 +1,44 @@
+/*
+ * Catson SMS subsystem.
+ *
+ * gllcff-sms.dtsi
+ *
+ * System management subsystem is used for debugging the catson AXI busses.
+ */
+/ {
+	soc {
+		/* SMS Debugging infrastructure */
+		lpc_sms {
+			status = "okay";
+			compatible = "st,lpc-sms";
+			reg = <0x0 0x26220000 0x1000>;
+			interrupts = <GIC_SPI 6 IRQ_TYPE_EDGE_RISING>;
+			clock-names = "lpc_sms";
+			clocks = <&clk_s_c0_flexgen CLK_LPC>;
+			lpc_sms-conf {
+				/* Timer period is approx '1/clk_divisor'    */
+				/* clk_divisor= 200000 > P~ 1/200000 = 5us   */
+				/* clk_divisor= 100000 > P~ 1/100000 = 10us  */
+				/* clk_divisor= 50000  > P~ 1/50000  = 20us  */
+				/* clk_divisor= 33333  > P~ 1/33333  = 30us  */
+				/* clk_divisor= 25000  > P~ 1/25000  = 40us  */
+				/* clk_divisor= 20000  > P~ 1/20000  = 50us  */
+				/* clk_divisor= 10000  > P~ 1/10000  = 100us */
+				/* clk_divisor= 5000   > P~ 1/5000   = 200us */
+				clk_divisor = <5000>;
+				/* Tics to remove in timer programming */
+				clk_jitter  = <0>;
+			};
+		};
+
+		sms {
+			status = "okay";
+			compatible = "st,gllcff-sms", "st,sms";
+			/* nb of lines */
+			ringbuffer_len = <1024>;
+			/* Timer period in us if LPC not used */
+			period_us = <300>;
+			interrupts = <GIC_SPI 66 IRQ_TYPE_EDGE_RISING>;
+		};
+    };
+};

@@ -1,0 +1,258 @@
+/*
+ * SpaceX IP Catson Device Tree
+ *
+ * spacex_catson_socip_cut4.dtsi
+ *
+ * SpaceX IP entries. Specific to Cut 4.
+ *
+ * Entries in the primary dts file are required to enable these
+ * peripherals and assign them to appropriate driver instances.
+ */
+
+#include "spacex_catson_socip_common.dtsi"
+
+/ {
+soc {
+	l2_reg: l2reg_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c200000 0 0x0c200000 0xc2000>;
+
+		l2_ut_tx_push {
+			reg = <0x0c200000 0x1000>;
+		};
+
+		l2_ut_tx_pull0 {
+			reg = <0x0c201000 0x1000>;
+		};
+
+		l2_ut_tx_pull1 {
+			reg = <0x0c202000 0x1000>;
+		};
+
+		l2_ut_tx_pull2 {
+			reg = <0x0c203000 0x1000>;
+		};
+
+		l2_ut_tx_pull3 {
+			reg = <0x0c204000 0x1000>;
+		};
+
+		l2_ut_tx_common {
+			reg = <0x0c205000 0x1000>;
+		};
+
+		l2_ut_rx_push0 {
+			reg = <0xc228000 0x1000>;
+		};
+
+		l2_ut_rx_push1 {
+			reg = <0xc229000 0x1000>;
+		};
+
+		l2_ut_rx_common {
+			reg = <0xc22a000 0x1000>;
+		};
+
+		l2_ut_rx_pull {
+			reg = <0xc22b000 0x1000>;
+		};
+	};
+
+	l3netmmap: l3reg_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c226000 0 0x0c226000 0x1000>;
+
+		l3_net {
+			reg = <0xc226000 0x1000>;
+		};
+	};
+
+	upstream_modemlink_monitor: modemlink_monitor@00c208004 {
+		status = "disabled";
+		compatible = "sx,catson-mdml-monitor-2.00";
+
+		phys = <&miphys2 PHY_TYPE_MDML>;
+		phy-names = "miphy";
+
+		reg = < 0 0x0c224080 0x50 >;
+	};
+
+	downstream_modemlink_monitor: modemlink_monitor@00c208018 {
+		status = "disabled";
+		compatible = "sx,catson-mdml-monitor-2.00";
+
+		phys = <&miphys1 PHY_TYPE_MDML>;
+		phy-names = "miphy";
+
+		reg = < 0 0x0c225080 0x50 >;
+	};
+
+	catson_pushpull_cfe_scp: pp_cfe_scp@0c212000 {
+		desc-type = "c4ethnet";
+	};
+
+	catson_pushpull_cfe_c2dc: pp_cfe_c2dc@0c214000 {
+		reg = < 0 0x0c214000 0x1000
+			0 0x0c218000 0x1000 >;
+		interrupt-parent = <&cfe_ctc_intc>;
+		interrupts = < 3 0 >;
+
+		desc-type = "c4ethnet";
+	};
+
+	catson_pushpull_cfe_c2uc: pp_cfe_c2uc@0c215000 {
+		reg = < 0 0x0c213000 0x1000
+			0 0x0c219000 0x1000 >;
+		interrupt-parent = <&cfe_ctc_intc>;
+		interrupts = < 2 1 >;
+
+		desc-type = "c4ethnet";
+	};
+
+	catson_pushpull_cfe_sdu: pp_cfe_sdu@0c211000 {
+		status = "disabled";
+		compatible = "sx,apb-dma-push-pull-2.00a";
+		suffix = "sdu";
+
+		phys = <&miphys1 PHY_TYPE_MDML>, <&miphys2 PHY_TYPE_MDML>;
+		phy-names = "catson-phy", "fcnet-phy";
+
+		reg = < 0 0x0c211000 0x1000
+			0 0x0c216000 0x1000 >;
+
+		interrupt-parent = <&cfe_gw_csdu_intc>;
+		interrupts = < 1 0 >;
+
+		desc-type = "c4sdu";
+
+		/* Link ID used for transmit */
+		link-id = <0x0000 0x1000>;
+
+		push {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+
+			/* Set the minimum transfer size to match HW */
+			min-transfer = <32>;
+		};
+
+		pull {
+			fifo-depth = <1024>;
+
+			/* Limit transfer sizes to one memory page */
+			buffer-size = <4096>;
+		};
+	}; /* MAC Pushpull */
+
+	aapmmap: aap_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c240000 0 0x0c240000 0x17100>;
+
+		aap {
+			reg = <0x0c240000 0x7000>;
+		};
+
+		caap_misc {
+			reg = <0xc250000 0x200>;
+		};
+
+		aap_ethernet {
+			reg = <0xc257000 0x100>;
+		};
+	};
+
+	catson_pushpull_aap: pp_aap@0c220000 {
+		reg = < 0 0x0c251000 0x1000
+			0 0x0c252000 0x1000 >;
+
+		interrupt-parent = < &aap_intc >;
+		interrupts = < 1  2 >;
+	}; /* AAP Common Pushpull */
+
+	catson_pushpull_aap_coeff: pp_aapc@0c221000 {
+		reg = <0 0x0c253000 0x1000>;
+
+		interrupt-parent = < &aap_intc >;
+		interrupts = < 3 >;
+	}; /* AAP Coeff Pushpull */
+
+	cfe_gw_csdu_intc: cfe_gw_csdu_intc@0c230000 {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		compatible = "sx,catson-intc-2.00";
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 184 4>;
+		reg = <0 0x0c230000 0x1000>;
+		sx,intr-count = <0x2>;
+	};
+
+	cfe_ctc_intc: cfe_ctc_intc@0c232000 {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		compatible = "sx,catson-intc-2.00";
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 186 4>;
+		reg = <0 0x0c232000 0x1000>;
+		sx,intr-count = <0x4>;
+	};
+
+	aap_intc: aap_intc@0c233000 {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		compatible = "sx,catson-intc-2.00";
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 187 4>;
+		reg = <0 0x0c233000 0x1000>;
+		sx,intr-count = <0x7>;
+	};
+
+	err_intc: err_intc@0c234000 {
+		status = "disabled";
+		#interrupt-cells = <1>;
+		compatible = "sx,catson-intc-2.00";
+		interrupt-controller;
+		interrupt-parent = <&gic>;
+		interrupts = <0 188 4>;
+		reg = <0 0x0c234000 0x1000>;
+		sx,intr-count = <0x7>;
+	};
+
+	l3_mem: l3mem_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c280000 0 0x0c280000 0x42000>;
+		l3_mem {
+			reg = <0x0c280000 0x42000>;
+		};
+	};
+
+	modem_tx: modem_tx_mmap {
+		status = "disabled";
+		compatible = "sx,simple-mmap";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0c100000 0 0x0c100000 0x00100000>;
+
+		modem_tx {
+			reg = <0x0c100000 0x100000>;
+		};
+	};
+
+}; /* soc */
+};

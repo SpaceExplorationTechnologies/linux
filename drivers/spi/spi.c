@@ -603,6 +603,15 @@ int spi_add_device(struct spi_device *spi)
 	else if (ctlr->cs_gpios)
 		spi->cs_gpio = ctlr->cs_gpios[spi->chip_select];
 
+#ifdef CONFIG_SPACEX
+	if (!(ctlr->bits_per_word_mask & SPI_BPW_MASK(8))) {
+		spi->bits_per_word = ffs(ctlr->bits_per_word_mask);
+		dev_info(dev,
+			 "Controller does not support 8 bit words.  Defaulting to %d\n",
+			 spi->bits_per_word);
+	}
+#endif
+
 	/* Drivers may modify this initial i/o setup, but will
 	 * normally rely on the device being setup.  Devices
 	 * using SPI_CS_HIGH can't coexist well otherwise...
@@ -797,6 +806,7 @@ static void spi_set_cs(struct spi_device *spi, bool enable, bool force)
 {
 	bool enable1 = enable;
 
+#ifndef CONFIG_SPACEX
 	/*
 	 * Avoid calling into the driver (or doing delays) if the chip select
 	 * isn't actually changing from the last time this was called.
@@ -807,6 +817,8 @@ static void spi_set_cs(struct spi_device *spi, bool enable, bool force)
 
 	spi->controller->last_cs_enable = enable;
 	spi->controller->last_cs_mode_high = spi->mode & SPI_CS_HIGH;
+
+#endif
 
 	if (!spi->controller->set_cs_timing) {
 		if (enable1)
@@ -1727,6 +1739,11 @@ void spi_finalize_current_message(struct spi_controller *ctlr)
 	struct spi_message *mesg;
 	unsigned long flags;
 	int ret;
+
+	if (oops_in_progress) {
+		/* nothing to do here, no queue in oops -- see __spi_sync() */
+		return;
+	}
 
 	spin_lock_irqsave(&ctlr->queue_lock, flags);
 	mesg = ctlr->cur_msg;
@@ -3669,8 +3686,11 @@ static int __spi_async(struct spi_device *spi, struct spi_message *message)
 
 	message->spi = spi;
 
-	SPI_STATISTICS_INCREMENT_FIELD(&ctlr->statistics, spi_async);
-	SPI_STATISTICS_INCREMENT_FIELD(&spi->statistics, spi_async);
+	if (!oops_in_progress) {
+		/* These take locks, and we really don't care in panic. */
+		SPI_STATISTICS_INCREMENT_FIELD(&ctlr->statistics, spi_async);
+		SPI_STATISTICS_INCREMENT_FIELD(&spi->statistics, spi_async);
+	}
 
 	trace_spi_message_submit(message);
 
@@ -3779,7 +3799,12 @@ int spi_async_locked(struct spi_device *spi, struct spi_message *message)
 	if (ret != 0)
 		return ret;
 
-	spin_lock_irqsave(&ctlr->bus_lock_spinlock, flags);
+	if (oops_in_progress) {
+		if (!spin_trylock_irqsave(&ctlr->bus_lock_spinlock, flags))
+			return -EBUSY;
+	} else {
+		spin_lock_irqsave(&ctlr->bus_lock_spinlock, flags);
+	}
 
 	ret = __spi_async(spi, message);
 
@@ -3817,15 +3842,20 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message)
 	message->context = &done;
 	message->spi = spi;
 
-	SPI_STATISTICS_INCREMENT_FIELD(&ctlr->statistics, spi_sync);
-	SPI_STATISTICS_INCREMENT_FIELD(&spi->statistics, spi_sync);
+	if (!oops_in_progress) {
+		/* These take locks, and we really don't care in panic. */
+		SPI_STATISTICS_INCREMENT_FIELD(&ctlr->statistics, spi_sync);
+		SPI_STATISTICS_INCREMENT_FIELD(&spi->statistics, spi_sync);
+	}
 
 	/* If we're not using the legacy transfer method then we will
 	 * try to transfer in the calling context so special case.
 	 * This code would be less tricky if we could remove the
 	 * support for driver implemented message queues.
 	 */
-	if (ctlr->transfer == spi_queued_transfer) {
+	if (oops_in_progress) {
+		status = ctlr->transfer_one_message(ctlr, message);
+	} else if (ctlr->transfer == spi_queued_transfer) {
 		spin_lock_irqsave(&ctlr->bus_lock_spinlock, flags);
 
 		trace_spi_message_submit(message);
@@ -3841,7 +3871,7 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message)
 		/* Push out the messages in the calling context if we
 		 * can.
 		 */
-		if (ctlr->transfer == spi_queued_transfer) {
+		if (!oops_in_progress && ctlr->transfer == spi_queued_transfer) {
 			SPI_STATISTICS_INCREMENT_FIELD(&ctlr->statistics,
 						       spi_sync_immediate);
 			SPI_STATISTICS_INCREMENT_FIELD(&spi->statistics,
@@ -3849,7 +3879,8 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message)
 			__spi_pump_messages(ctlr, false);
 		}
 
-		wait_for_completion(&done);
+		if (!oops_in_progress)
+			wait_for_completion(&done);
 		status = message->status;
 	}
 	message->context = NULL;
@@ -3881,7 +3912,12 @@ int spi_sync(struct spi_device *spi, struct spi_message *message)
 {
 	int ret;
 
-	mutex_lock(&spi->controller->bus_lock_mutex);
+	if (oops_in_progress) {
+		if (!mutex_trylock(&spi->controller->bus_lock_mutex))
+			return -EBUSY;
+	} else {
+		mutex_lock(&spi->controller->bus_lock_mutex);
+	}
 	ret = __spi_sync(spi, message);
 	mutex_unlock(&spi->controller->bus_lock_mutex);
 
@@ -4008,7 +4044,8 @@ int spi_write_then_read(struct spi_device *spi,
 	 */
 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
 		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx),
-				    GFP_KERNEL | GFP_DMA);
+				    ((oops_in_progress ? GFP_ATOMIC : GFP_KERNEL) |
+				     GFP_DMA));
 		if (!local_buf)
 			return -ENOMEM;
 	} else {

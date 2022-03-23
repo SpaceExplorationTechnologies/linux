@@ -1,0 +1,27 @@
+/*
+ * User Terminal IMU on SPI Bus 2.
+ */
+
+/ {
+	soc {
+		imu_spi: spi2@8830000 {
+			status = "okay";
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			num-cs = <1>;
+			cs-gpios = <&pio21 3 GPIO_ACTIVE_LOW>;
+
+			ism330dxc@0 {
+				compatible = "st,ism330dhc";
+				reg = <0>;
+
+				interrupt-parent = <&pio12>;
+				interrupts = <5 IRQ_TYPE_EDGE_RISING>;
+
+				/* 26.3mhz chip Catson limited to 10.000MHz */
+				spi-max-frequency = <10000000>;
+			};
+		};
+	};
+};

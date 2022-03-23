@@ -516,4 +516,3 @@ int gem_set_hwtst(struct net_device *dev, struct ifreq *ifr, int cmd)
 	else
 		return 0;
 }
-

@@ -344,7 +344,10 @@ struct spi_nor_flash_parameter;
  * @read_dummy:		the dummy needed by the read operation
  * @program_opcode:	the program opcode
  * @sst_write_second:	used by the SST write operation
- * @flags:		flag options for the current SPI NOR (SNOR_F_*)
+ * @can_panic_write:	the driver supports avoiding sleeps in the write path
+ *			if oops_in_progress is true; only set this if the
+ *			spi_master supports it as well
+ * @flags:		flag options for the current SPI-NOR (SNOR_F_*)
  * @read_proto:		the SPI protocol for read operations
  * @write_proto:	the SPI protocol for write operations
  * @reg_proto:		the SPI protocol for read_reg/write_reg/erase operations
@@ -367,6 +370,9 @@ struct spi_nor {
 	const struct spi_nor_manufacturer *manufacturer;
 	u32			page_size;
 	u8			addr_width;
+#ifdef CONFIG_SPACEX
+	u8			n_dies;
+#endif /* CONFIG_SPACEX */
 	u8			erase_opcode;
 	u8			read_opcode;
 	u8			read_dummy;
@@ -375,6 +381,7 @@ struct spi_nor {
 	enum spi_nor_protocol	write_proto;
 	enum spi_nor_protocol	reg_proto;
 	bool			sst_write_second;
+	bool			can_panic_write;
 	u32			flags;
 
 	const struct spi_nor_controller_ops *controller_ops;

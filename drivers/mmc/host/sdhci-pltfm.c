@@ -110,6 +110,21 @@ void sdhci_get_property(struct platform_device *pdev)
 	if (device_property_read_bool(dev, "wakeup-source") ||
 	    device_property_read_bool(dev, "enable-sdio-wakeup")) /* legacy */
 		host->mmc->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
+
+#ifdef CONFIG_SPACEX
+	/*
+	 * The 'hi-speed' I/O mode for SD Cards is broken on the Xilinx
+	 * zcu102 hw board.  This causes the SD controller to report
+	 * I/O errors while writing to some hi-speed SD Cards. This
+	 * is not vendor or SD Card size specific.
+	 *
+	 * The root cause of this issue is not yet known but disabling
+	 * 'hi-speed' I/O capability at the sdhci controller fixes the issue.
+	 */
+	if (device_property_read_bool(dev, "sx,quirk-no-hispd-bit")) {
+		host->quirks |= SDHCI_QUIRK_NO_HISPD_BIT;
+	}
+#endif
 }
 EXPORT_SYMBOL_GPL(sdhci_get_property);
 

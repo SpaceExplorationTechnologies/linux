@@ -48,6 +48,9 @@
 
 /* SSC Interrupt Enable */
 #define SSC_IEN_TEEN			BIT(2)
+#ifdef CONFIG_SPACEX
+#define SSC_IEN_TIEN			BIT(1)
+#endif /* CONFIG_SPACEX */
 
 #define FIFO_SIZE			8
 
@@ -157,7 +160,11 @@ static int spi_st_transfer_one(struct spi_master *master,
 
 	/* Start transfer by writing to the TX FIFO */
 	ssc_write_tx_fifo(spi_st);
+#ifdef CONFIG_SPACEX
+	writel_relaxed(SSC_IEN_TEEN | SSC_IEN_TIEN, spi_st->base + SSC_IEN);
+#else /* !CONFIG_SPACEX */
 	writel_relaxed(SSC_IEN_TEEN, spi_st->base + SSC_IEN);
+#endif /* CONFIG_SPACEX */
 
 	/* Wait for transfer to complete */
 	wait_for_completion(&spi_st->done);

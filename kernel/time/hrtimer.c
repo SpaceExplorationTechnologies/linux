@@ -1740,7 +1740,11 @@ retry:
 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
 	now = hrtimer_update_base(cpu_base);
 	cpu_base->nr_retries++;
+#ifdef CONFIG_SPACEX
+	if (++retries < 20)
+#else
 	if (++retries < 3)
+#endif
 		goto retry;
 	/*
 	 * Give the system a chance to do something else than looping

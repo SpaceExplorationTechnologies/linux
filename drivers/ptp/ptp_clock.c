@@ -77,7 +77,7 @@ long scaled_ppm_to_ppb(long ppm)
 	 *
 	 *    ppb = scaled_ppm * 125 / 2^13
 	 */
-	s64 ppb = 1 + ppm;
+	s64 ppb = 1LL + ppm;
 	ppb *= 125;
 	ppb >>= 13;
 	return (long) ppb;
@@ -325,6 +325,7 @@ void ptp_clock_event(struct ptp_clock *ptp, struct ptp_clock_event *event)
 	switch (event->type) {
 
 	case PTP_CLOCK_ALARM:
+		sysfs_notify_dirent(ptp->alarm_attrs[event->index].kn);
 		break;
 
 	case PTP_CLOCK_EXTTS:

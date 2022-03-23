@@ -395,6 +395,7 @@ int kernfs_setattr(struct kernfs_node *kn, const struct iattr *iattr);
 __poll_t kernfs_generic_poll(struct kernfs_open_file *of,
 			     struct poll_table_struct *pt);
 void kernfs_notify(struct kernfs_node *kn);
+void kernfs_notify_poll(struct kernfs_node *kn);
 
 int kernfs_xattr_get(struct kernfs_node *kn, const char *name,
 		     void *value, size_t size);
@@ -502,6 +503,8 @@ static inline int kernfs_setattr(struct kernfs_node *kn,
 { return -ENOSYS; }
 
 static inline void kernfs_notify(struct kernfs_node *kn) { }
+
+static inline void kernfs_notify_poll(struct kernfs_node *kn) { }
 
 static inline int kernfs_xattr_get(struct kernfs_node *kn, const char *name,
 				   void *value, size_t size)

@@ -1887,6 +1887,13 @@ static void uart_line_info(struct seq_file *m, struct uart_driver *drv, int i)
 
 		seq_printf(m, " tx:%d rx:%d",
 				uport->icount.tx, uport->icount.rx);
+#ifdef CONFIG_SPACEX
+		seq_printf(m, " fe:%d", uport->icount.frame);
+		seq_printf(m, " pe:%d", uport->icount.parity);
+		seq_printf(m, " brk:%d", uport->icount.brk);
+		seq_printf(m, " oe:%d", uport->icount.overrun);
+		seq_printf(m, " bo:%d", uport->icount.buf_overrun);
+#else
 		if (uport->icount.frame)
 			seq_printf(m, " fe:%d",	uport->icount.frame);
 		if (uport->icount.parity)
@@ -1897,6 +1904,7 @@ static void uart_line_info(struct seq_file *m, struct uart_driver *drv, int i)
 			seq_printf(m, " oe:%d", uport->icount.overrun);
 		if (uport->icount.buf_overrun)
 			seq_printf(m, " bo:%d", uport->icount.buf_overrun);
+#endif /* CONFIG_SPACEX */
 
 #define INFOBIT(bit, str) \
 	if (uport->mctrl & (bit)) \

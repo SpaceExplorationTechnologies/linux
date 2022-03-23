@@ -18,6 +18,9 @@
 #include <linux/interrupt.h>
 #include <linux/mtd/mtd.h>
 #include <linux/kmsg_dump.h>
+#ifdef CONFIG_SPACEX
+#include <linux/sched/clock.h>
+#endif
 
 /* Maximum MTD partition size */
 #define MTDOOPS_MAX_MTD_SIZE (8 * 1024 * 1024)
@@ -25,10 +28,28 @@
 #define MTDOOPS_KERNMSG_MAGIC 0x5d005d00
 #define MTDOOPS_HEADER_SIZE   8
 
+#ifdef CONFIG_SPACEX
+static const char *months[] = {
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+#endif /* CONFIG_SPACEX */
+
+#ifndef CONFIG_SPACEX
 static unsigned long record_size = 4096;
 module_param(record_size, ulong, 0400);
 MODULE_PARM_DESC(record_size,
 		"record size for MTD OOPS pages in bytes (default 4096)");
+#else /* !CONFIG_SPACEX */
+/*
+ * Increase the default record size so that we can capture the entire mtdoops
+ * log on multicore arm64 boards.
+ */
+static unsigned long record_size = 8192;
+module_param(record_size, ulong, 0400);
+MODULE_PARM_DESC(record_size,
+		"record size for MTD OOPS pages in bytes (default 8192)");
+#endif /* CONFIG_SPACEX */
 
 static char mtddev[80];
 module_param_string(mtddev, mtddev, 80, 0400);
@@ -38,7 +59,11 @@ MODULE_PARM_DESC(mtddev,
 static int dump_oops = 1;
 module_param(dump_oops, int, 0600);
 MODULE_PARM_DESC(dump_oops,
+#ifndef CONFIG_SPACEX
 		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
+#else /* !CONFIG_SPACEX */
+		"set to 1 dump all, 0 only dump panics (default 1), < 0 off");
+#endif /* CONFIG_SPACEX */
 
 static struct mtdoops_context {
 	struct kmsg_dumper dump;
@@ -272,13 +297,48 @@ static void mtdoops_do_dump(struct kmsg_dumper *dumper,
 {
 	struct mtdoops_context *cxt = container_of(dumper,
 			struct mtdoops_context, dump);
+#ifdef CONFIG_SPACEX
+	int pos;
+	struct tm tm;
+	u64 ts;
+	unsigned long sec, usec;
+	struct timespec64 now;
+#endif /* CONFIG_SPACEX */
+
+#ifdef CONFIG_SPACEX
+	if (dump_oops < 0)
+		return;
+#endif /* CONFIG_SPACEX */
 
 	/* Only dump oopses if dump_oops is set */
 	if (reason == KMSG_DUMP_OOPS && !dump_oops)
 		return;
 
+#ifndef CONFIG_SPACEX
 	kmsg_dump_get_buffer(iter, true, cxt->oops_buf + MTDOOPS_HEADER_SIZE,
 			     record_size - MTDOOPS_HEADER_SIZE, NULL);
+#else /* !CONFIG_SPACEX */
+	/* Get current times */
+	ktime_get_real_ts64(&now);
+	time64_to_tm(now.tv_sec, 0, &tm);
+	ts = local_clock();
+	usec = do_div(ts, NSEC_PER_SEC) / NSEC_PER_USEC;
+	sec = ts;
+
+	/* Make room for the header */
+	pos = MTDOOPS_HEADER_SIZE;
+
+	/* Append the timestamps */
+	pos += scnprintf(cxt->oops_buf + pos, record_size - pos,
+		"Current time: %u-%s-%lu %02u:%02u:%02u "
+		"Seconds since boot: %lu.%06lu\n",
+		tm.tm_mday, months[tm.tm_mon], tm.tm_year + 1900,
+		tm.tm_hour, tm.tm_min, tm.tm_sec, sec, usec);
+
+	/* Append kernel logs */
+	kmsg_dump_get_buffer(iter, true, cxt->oops_buf + pos,
+			     record_size - pos, NULL);
+#endif /* CONFIG_SPACEX */
 
 	if (reason != KMSG_DUMP_OOPS) {
 		/* Panics must be written immediately */

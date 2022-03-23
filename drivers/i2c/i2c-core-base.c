@@ -1185,6 +1185,16 @@ new_device_store(struct device *dev, struct device_attribute *attr,
 	if (IS_ERR(client))
 		return PTR_ERR(client);
 
+#ifdef CONFIG_SPACEX
+	if (!client->dev.driver) {
+		dev_err(&client->dev,
+			"Failed to attach driver type '%s' at addr 0x%04x\n",
+			info.type, info.addr);
+		i2c_unregister_device(client);
+		return -ENODEV;
+	}
+#endif /* CONFIG_SPACEX */
+
 	/* Keep track of the added device */
 	mutex_lock(&adap->userspace_clients_lock);
 	list_add_tail(&client->detected, &adap->userspace_clients);

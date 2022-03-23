@@ -20,5 +20,18 @@
 #define PHY_TYPE_XPCS		7
 #define PHY_TYPE_SGMII		8
 #define PHY_TYPE_QSGMII		9
+#define PHY_TYPE_MDML		10
+
+
+#define PHY_FREQ_DEFAULT		0
+#define PHY_MDML_FREQ_6Gbps		1
+#define PHY_MDML_FREQ_8Gbps		2
+#define PHY_MDML_FREQ_9p96Gbps		3
+#define PHY_MDML_FREQ_10p3125Gbps	4
+
+#define PHY_POL_SWAP_NONE       0
+#define PHY_POL_SWAP_RX         1
+#define PHY_POL_SWAP_TX         2
+#define PHY_POL_SWAP_BOTH       3
 
 #endif /* _DT_BINDINGS_PHY */

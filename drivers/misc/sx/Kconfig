@@ -1,0 +1,59 @@
+menuconfig SPACEX
+	bool "SpaceX Board Support"
+	select OF_EARLY_FLATTREE if OF
+	select SX_TIME_BOOTSTRAP
+	help
+	  Enable SpaceX-specific board support features.
+
+if SPACEX
+
+config SX_TIME_BOOTSTRAP
+	bool "SpaceX high-precision time bootstrapping"
+	help
+	  Enable this feature to bootstrap the system time precisely at boot
+	  time.  The kernel calculates the current time using the processor's
+	  cycle counter and a 64-bit /chosen/cpu-boot-time-unix-ns value in the
+	  device tree.  The kernel expects that this value (along with 32-bit
+	  /chosen/utc-offset) has been populated by U-Boot after it ran
+	  SpaceX's "better rdate" protocol.
+
+config SX_SIMPLE_MMAP
+	tristate "SpaceX Simple mmap() Driver"
+	help
+	  This adds support for defining memory regions to be exported (via
+	  sysfs) as mmap()able files.  This is useful for e.g. local and
+	  remote Personality Module (PM) cores present on many SpaceX FPGA
+	  builds.  Such cores provide Remote Input/Output (RIO) functionality.
+
+	  Say Y if you are building for a board with such an FPGA build.
+
+	  If unsure, say N.
+
+config SX_PUSH_PULL
+	tristate "SpaceX Push-Pull Driver"
+	help
+	  Support for the FIFO interfaces used in the Satellite network
+	  to communicate with the FPGA networking layer and with the modems.
+
+	  Say Y if you are building for a board with such an FPGA build.
+
+	  If unsure, say N.
+
+config SX_CATSON_SCP
+	tristate "SpaceX Catson SCP Driver"
+	help
+	  Support for Catson SCP interface.
+
+	  Say Y if you are building for a satellite modem connected to a
+	  phased array beam-forming mesh.
+
+	  If unsure, say N.
+
+config SX_CATSON_FUSE
+	tristate "SpaceX Catson Fuse Driver"
+	help
+	  Interface for acting with Catson fuses.
+
+	  If unsure, say N.
+
+endif # SPACEX

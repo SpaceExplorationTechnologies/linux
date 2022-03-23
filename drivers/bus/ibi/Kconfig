@@ -1,0 +1,10 @@
+#
+# IP Bus Interface (IBI)
+#
+
+config IBI
+	bool "IP Bus Interface framework"
+	select REGMAP_MMIO
+	help
+	  Framework to configure the IP BUS interfaces such as IP Plugs or
+	  ST Plugs.

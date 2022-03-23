@@ -876,7 +876,9 @@ static void asc_console_write(struct console *co, const char *s, unsigned count)
 	unsigned long flags;
 	unsigned long timeout = 1000000;
 	int locked = 1;
+#ifndef CONFIG_SPACEX
 	u32 intenable;
+#endif
 
 	if (port->sysrq)
 		locked = 0; /* asc_interrupt has already claimed the lock */
@@ -885,6 +887,7 @@ static void asc_console_write(struct console *co, const char *s, unsigned count)
 	else
 		spin_lock_irqsave(&port->lock, flags);
 
+#ifndef CONFIG_SPACEX
 	/*
 	 * Disable interrupts so we don't get the IRQ line bouncing
 	 * up and down while interrupts are disabled.
@@ -892,13 +895,16 @@ static void asc_console_write(struct console *co, const char *s, unsigned count)
 	intenable = asc_in(port, ASC_INTEN);
 	asc_out(port, ASC_INTEN, 0);
 	(void)asc_in(port, ASC_INTEN);	/* Defeat bus write posting */
+#endif
 
 	uart_console_write(port, s, count, asc_console_putchar);
 
 	while (--timeout && !asc_txfifo_is_empty(port))
 		udelay(1);
 
+#ifndef CONFIG_SPACEX
 	asc_out(port, ASC_INTEN, intenable);
+#endif
 
 	if (locked)
 		spin_unlock_irqrestore(&port->lock, flags);
@@ -943,6 +949,36 @@ static struct console asc_console = {
 };
 
 #define ASC_SERIAL_CONSOLE (&asc_console)
+
+static void st_asc_printch(struct uart_port *port, int c)
+{
+	while (asc_in(port, ASC_STA) & ASC_STA_TF) {
+
+	}
+
+	writeb_relaxed(c, port->membase + ASC_TXBUF);
+}
+
+static void stasc_early_write(struct console *con, const char *s,
+			      unsigned int n)
+{
+	struct earlycon_device *dev = con->data;
+
+	uart_console_write(&dev->port, s, n, st_asc_printch);
+}
+
+static int __init stasc_early_console_setup(struct earlycon_device *device,
+					    const char *opt)
+{
+	if (!device->port.membase)
+		return -ENODEV;
+
+	device->con->write = stasc_early_write;
+	return 0;
+}
+
+EARLYCON_DECLARE(stasc, stasc_early_console_setup);
+OF_EARLYCON_DECLARE(stasc, "st,asc", stasc_early_console_setup);
 
 #else
 #define ASC_SERIAL_CONSOLE NULL

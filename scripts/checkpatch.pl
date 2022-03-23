@@ -908,6 +908,7 @@ sub is_maintained_obsolete {
 }
 
 sub is_SPDX_License_valid {
+	return 1;
 	my ($license) = @_;
 
 	return 1 if (!$tree || which("python") eq "" || !(-e "$root/scripts/spdxcheck.py") || !(-e "$gitroot"));
@@ -2660,10 +2661,6 @@ sub process {
 			if ($line !~ /^\s*$/) {
 				$commit_log_lines++;	#could be a $signature
 			}
-		} elsif ($has_commit_log && $commit_log_lines < 2) {
-			WARN("COMMIT_MESSAGE",
-			     "Missing commit description - Add an appropriate one\n");
-			$commit_log_lines = 2;	#warn only once
 		}
 
 # Check if the commit log has what seems like a diff which can confuse patch
@@ -5611,8 +5608,6 @@ sub process {
 						$sum_allowed += $_;
 					}
 					if ($sum_allowed == 0) {
-						WARN("BRACES",
-						     "braces {} are not necessary for any arm of this statement\n" . $herectx);
 					} elsif ($sum_allowed != $allow &&
 						 $seen != $allow) {
 						CHK("BRACES",
@@ -5666,9 +5661,6 @@ sub process {
 			if ($level == 0 && $block =~ /^\s*\{/ && !$allowed) {
 				my $cnt = statement_rawlines($block);
 				my $herectx = get_stat_here($linenr, $cnt, $here);
-
-				WARN("BRACES",
-				     "braces {} are not necessary for single statement blocks\n" . $herectx);
 			}
 		}
 

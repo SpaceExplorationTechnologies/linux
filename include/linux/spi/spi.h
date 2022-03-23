@@ -347,6 +347,7 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
  * @bus_lock_spinlock: spinlock for SPI bus locking
  * @bus_lock_mutex: mutex for exclusion of multiple callers
  * @bus_lock_flag: indicates that the SPI bus is locked for exclusive use
+ * @can_panic_write: set it master supports non-blocking write during oops
  * @setup: updates the device mode and clocking records used by a
  *	device's SPI controller; protocol code may call this.  This
  *	must fail if an unrecognized or unsupported mode is requested.
@@ -534,6 +535,9 @@ struct spi_controller {
 	/* flag indicating that the SPI bus is locked for exclusive use */
 	bool			bus_lock_flag;
 
+	/* does this master support non-sleeping write if oops_in_progress? */
+	bool			can_panic_write;
+
 	/* Setup mode and clock, etc (spi driver may call many times).
 	 *
 	 * IMPORTANT:  this may be called when transfers to another
@@ -608,8 +612,10 @@ struct spi_controller {
 	bool				auto_runtime_pm;
 	bool                            cur_msg_prepared;
 	bool				cur_msg_mapped;
+#ifndef CONFIG_SPACEX
 	bool				last_cs_enable;
 	bool				last_cs_mode_high;
+#endif
 	bool                            fallback;
 	struct completion               xfer_completion;
 	size_t				max_dma_len;
@@ -947,6 +953,17 @@ struct spi_transfer {
 #define	SPI_NBITS_SINGLE	0x01 /* 1bit transfer */
 #define	SPI_NBITS_DUAL		0x02 /* 2bits transfer */
 #define	SPI_NBITS_QUAD		0x04 /* 4bits transfer */
+
+#ifdef CONFIG_SPACEX
+	unsigned	parallel_mode:3;
+#define SPI_PARALLEL_MODE_NONE		0	/* non-parallel mode */
+#define SPI_PARALLEL_MODE_LOWER		1	/* lower chip only */
+#define SPI_PARALLEL_MODE_UPPER		2	/* upper chip only */
+#define SPI_PARALLEL_MODE_CLONE		3	/* duplicate on both chips */
+#define SPI_PARALLEL_MODE_STRIPE	4	/* stripe even/odd bytes */
+#define SPI_PARALLEL_MODE_REG_READ	5	/* stripe but coalesce */
+#endif /* CONFIG_SPACEX */
+
 	u8		bits_per_word;
 	u16		delay_usecs;
 	struct spi_delay	delay;

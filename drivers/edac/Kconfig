@@ -537,4 +537,22 @@ config EDAC_DMC520
 	  Support for error detection and correction on the
 	  SoCs with ARM DMC-520 DRAM controller.
 
+config EDAC_CADENCE
+	tristate "Cadence DDR ECC"
+	help
+	  Support for error detection and correction on the
+	  Cadence DDR controller.
+
+config EDAC_CORTEX_ARM64
+	tristate "ARM Cortex A57/A53"
+	depends on ARM64
+	help
+	  Support for error detection and correction on the
+	  ARM Cortex A57 and A53.
+
+config EDAC_STI_SRAM
+	tristate "STI SRAM ECC"
+	help
+	  ST ECC driver for sram
+
 endif # EDAC

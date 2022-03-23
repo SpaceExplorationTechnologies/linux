@@ -8,6 +8,7 @@ PREEMPT=$4
 PREEMPT_RT=$5
 CC_VERSION="$6"
 LD=$7
+SPACEX_BUILD=$8
 
 vecho() { [ "${quiet}" = "silent_" ] || echo "$@" ; }
 
@@ -46,6 +47,11 @@ if [ -n "$SMP" ] ; then CONFIG_FLAGS="SMP"; fi
 if [ -n "$PREEMPT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT"; fi
 if [ -n "$PREEMPT_RT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT_RT"; fi
 
+# SpaceX Version Info
+
+SPACEX_COMMIT="$(git rev-parse HEAD)$(git update-index --refresh && git diff-index --quiet HEAD || echo -dirty)"
+SPACEX_BRANCH="$(git ls-remote --get-url || echo local) $(git rev-parse --abbrev-ref HEAD)"
+
 # Truncate to maximum length
 UTS_LEN=64
 UTS_VERSION="$(echo $UTS_VERSION $CONFIG_FLAGS $TIMESTAMP | cut -b -$UTS_LEN)"
@@ -65,6 +71,11 @@ UTS_VERSION="$(echo $UTS_VERSION $CONFIG_FLAGS $TIMESTAMP | cut -b -$UTS_LEN)"
   LD_VERSION=$($LD -v | head -n1 | sed 's/(compatible with [^)]*)//' \
 		      | sed 's/[[:space:]]*$//')
   printf '#define LINUX_COMPILER "%s"\n' "$CC_VERSION, $LD_VERSION"
+
+  echo \#define SPACEX_COMMIT \"$SPACEX_COMMIT\"
+  echo \#define SPACEX_BRANCH \"$SPACEX_BRANCH\"
+  echo \#define SPACEX_BUILD \"$SPACEX_BUILD\"
+
 } > .tmpcompile
 
 # Only replace the real compile.h if the new one is different,

@@ -1,0 +1,37 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "gllcff-cut4.dtsi"
+#include "spacex_catson_socip_cut4.dtsi"
+#include "spacex_satellite_dmverity_pubkey.dtsi"
+#include "spacex_satellite_uterm_common.dtsi"
+
+/ {
+	soc {
+		aap_intc: aap_intc@0c233000 {
+			status = "okay";
+		};
+
+		err_intc: err_intc@0c234000 {
+			status = "okay";
+		};
+
+		catson_one_pps {
+			status = "okay";
+		};
+
+		modem_tx_proc_irq2: modem_tx_irq_2 {
+			status = "okay";
+		};
+
+		modem_tx_proc_irq8: modem_tx_irq_8 {
+			status = "okay";
+		};
+	};
+};

@@ -36,12 +36,14 @@ struct stm_fs {
 	unsigned long pe;
 	unsigned long sdiv;
 	unsigned long nsdiv;
+	unsigned long inputfreqsel;
 };
 
 struct clkgen_quadfs_data {
 	bool reset_present;
 	bool bwfilter_present;
 	bool lockstatus_present;
+	bool inputfreqsel_present;
 	bool powerup_polarity;
 	bool standby_polarity;
 	bool nsdiv_present;
@@ -51,6 +53,7 @@ struct clkgen_quadfs_data {
 	struct clkgen_field nreset;
 	struct clkgen_field npda;
 	struct clkgen_field lock_status;
+	struct clkgen_field inputfreqsel;
 
 	struct clkgen_field nrst[QUADFS_MAX_CHAN];
 	struct clkgen_field nsb[QUADFS_MAX_CHAN];
@@ -67,11 +70,16 @@ struct clkgen_quadfs_data {
 };
 
 static const struct clk_ops st_quadfs_pll_c32_ops;
+static const struct clk_ops st_quadfs_pll_c28_ops;
 
 static int clk_fs660c32_dig_get_params(unsigned long input,
 		unsigned long output, struct stm_fs *fs);
 static int clk_fs660c32_dig_get_rate(unsigned long, const struct stm_fs *,
 		unsigned long *);
+static int clk_fs660c28_dig_get_params(unsigned long input,
+				       unsigned long output, struct stm_fs *fs);
+static int clk_fs660c28_dig_get_rate(unsigned long, const struct stm_fs *,
+				     unsigned long *);
 
 static const struct clkgen_quadfs_data st_fs660c32_C = {
 	.nrst_present = true,
@@ -113,6 +121,50 @@ static const struct clkgen_quadfs_data st_fs660c32_C = {
 	.pll_ops	= &st_quadfs_pll_c32_ops,
 	.get_params	= clk_fs660c32_dig_get_params,
 	.get_rate	= clk_fs660c32_dig_get_rate,
+};
+
+static const struct clkgen_quadfs_data st_fs660c28_C = {
+	.nrst_present = true,
+	.nrst	= { CLKGEN_FIELD(0x2f0, 0x1, 0),
+		    CLKGEN_FIELD(0x2f0, 0x1, 1),
+		    CLKGEN_FIELD(0x2f0, 0x1, 2),
+		    CLKGEN_FIELD(0x2f0, 0x1, 3) },
+	.npda = CLKGEN_FIELD(0x2f0, 0x1, 12),
+	.nsb	= { CLKGEN_FIELD(0x2f0, 0x1, 8),
+		    CLKGEN_FIELD(0x2f0, 0x1, 9),
+		    CLKGEN_FIELD(0x2f0, 0x1, 10),
+		    CLKGEN_FIELD(0x2f0, 0x1, 11) },
+	.nsdiv_present = true,
+	.nsdiv	= { CLKGEN_FIELD(0x304, 0x1, 24),
+		    CLKGEN_FIELD(0x308, 0x1, 24),
+		    CLKGEN_FIELD(0x30c, 0x1, 24),
+		    CLKGEN_FIELD(0x310, 0x1, 24) },
+	.mdiv	= { CLKGEN_FIELD(0x304, 0x1f, 15),
+		    CLKGEN_FIELD(0x308, 0x1f, 15),
+		    CLKGEN_FIELD(0x30c, 0x1f, 15),
+		    CLKGEN_FIELD(0x310, 0x1f, 15) },
+	.en	= { CLKGEN_FIELD(0x2fc, 0x1, 0),
+		    CLKGEN_FIELD(0x2fc, 0x1, 1),
+		    CLKGEN_FIELD(0x2fc, 0x1, 2),
+		    CLKGEN_FIELD(0x2fc, 0x1, 3) },
+	.ndiv = CLKGEN_FIELD(0x2f4, 0xf, 16),
+	.pe	= { CLKGEN_FIELD(0x304, 0x7fff, 0),
+		    CLKGEN_FIELD(0x308, 0x7fff, 0),
+		    CLKGEN_FIELD(0x30c, 0x7fff, 0),
+		    CLKGEN_FIELD(0x310, 0x7fff, 0) },
+	.sdiv	= { CLKGEN_FIELD(0x304, 0xf, 20),
+		    CLKGEN_FIELD(0x308, 0xf, 20),
+		    CLKGEN_FIELD(0x30c, 0xf, 20),
+		    CLKGEN_FIELD(0x310, 0xf, 20) },
+	.lockstatus_present = true,
+	.lock_status = CLKGEN_FIELD(0x2f0, 0x1, 24),
+	.inputfreqsel_present = true,
+	.inputfreqsel = CLKGEN_FIELD(0x2f0, 0x1, 16),
+	.powerup_polarity = 1,
+	.standby_polarity = 1,
+	.pll_ops = &st_quadfs_pll_c28_ops,
+	.get_params	= clk_fs660c28_dig_get_params,
+	.get_rate	= clk_fs660c28_dig_get_rate,
 };
 
 static const struct clkgen_quadfs_data st_fs660c32_D = {
@@ -183,6 +235,7 @@ struct st_clk_quadfs_pll {
 	spinlock_t	*lock;
 	struct clkgen_quadfs_data *data;
 	u32 ndiv;
+	u32 inputfreqsel;
 };
 
 #define to_quadfs_pll(_hw) container_of(_hw, struct st_clk_quadfs_pll, hw)
@@ -207,6 +260,8 @@ static int quadfs_pll_enable(struct clk_hw *hw)
 	if (pll->data->bwfilter_present)
 		CLKGEN_WRITE(pll, ref_bw, PLL_BW_GOODREF);
 
+	if (pll->data->inputfreqsel_present)
+		CLKGEN_WRITE(pll, inputfreqsel, pll->inputfreqsel);
 
 	CLKGEN_WRITE(pll, ndiv, pll->ndiv);
 
@@ -376,6 +431,165 @@ static const struct clk_ops st_quadfs_pll_c32_ops = {
 	.recalc_rate	= quadfs_pll_fs660c32_recalc_rate,
 	.round_rate	= quadfs_pll_fs660c32_round_rate,
 	.set_rate	= quadfs_pll_fs660c32_set_rate,
+};
+
+static int clk_fs660c28_vco_get_rate(unsigned long input,
+				     unsigned long ndiv,
+				     unsigned long inputfreqsel,
+				     unsigned long *rate)
+{
+	/* ndiv: 0x2 to 0xf => formula 10 to 23 */
+	if ((ndiv < 2) || (ndiv > 15) || inputfreqsel > 1)
+		return -1;	/* Invalid NDIV */
+
+	*rate = (input * (ndiv + 8)) / (inputfreqsel ? 2 : 1);
+
+	return 0;
+}
+
+static int clk_fs660c28_vco_get_params(unsigned long input,
+				       unsigned long output,
+				       unsigned long *ndiv,
+				       unsigned long *inputfreqsel,
+				       unsigned long *rate)
+{
+	/*
+	 * Formula
+	 * VCO frequency = (fin x ndiv) / pdiv
+	 * ndiv = VCOfreq * pdiv / fin
+	 */
+	unsigned long pdiv, n;
+
+	/* Output clock range: 384Mhz to 660Mhz with 2% margin */
+	if (output < 376320000 || output > 673200000)
+		return -1;
+
+	/*
+	 * Input clock range: 24Mhz to 40Mhz with 2% margin
+	 * and 48Mhz to 80Mhz with 2% margin
+	 */
+	if ((input >= 23520000) && (input <= 40800000))	{
+		pdiv = 1;
+		*inputfreqsel = 0;
+	} else if ((input >= 47040000) && (input <= 81600000)) {
+		pdiv = 2;
+		*inputfreqsel = 1;
+	} else {
+		return -1;
+	}
+
+	n = output * pdiv / input;
+
+	/* ndiv: 0x2 to 0xf => formula 10 to 23 */
+	if (n < 10)
+		n = 10;
+	else if (n > 23)
+		n = 23;
+
+	*ndiv = n - 8; /* Converting formula value to reg value */
+
+	return clk_fs660c28_vco_get_rate(input, *ndiv, *inputfreqsel, rate);
+}
+
+static unsigned long quadfs_pll_fs660c28_recalc_rate(struct clk_hw *hw,
+						     unsigned long parent_rate)
+{
+	struct st_clk_quadfs_pll *pll = to_quadfs_pll(hw);
+	unsigned long rate = 0;
+	unsigned long ndiv, inputfreqsel;
+	unsigned long flags;
+
+	if (pll->lock)
+		spin_lock_irqsave(pll->lock, flags);
+
+	ndiv = CLKGEN_READ(pll, ndiv);
+	inputfreqsel = CLKGEN_READ(pll, inputfreqsel);
+
+	if (pll->lock)
+		spin_unlock_irqrestore(pll->lock, flags);
+
+	if (clk_fs660c28_vco_get_rate(parent_rate, ndiv, inputfreqsel, &rate))
+		pr_err("%s:%s error calculating rate\n", clk_hw_get_name(hw),
+		       __func__);
+
+	if (pll->lock)
+		spin_lock_irqsave(pll->lock, flags);
+
+	pll->ndiv = ndiv;
+	pll->inputfreqsel = inputfreqsel;
+
+	if (pll->lock)
+		spin_unlock_irqrestore(pll->lock, flags);
+
+	return rate;
+}
+
+static long quadfs_pll_fs660c28_round_rate(struct clk_hw *hw,
+					   unsigned long rate,
+					   unsigned long *prate)
+{
+	unsigned long ndiv = 0;
+	unsigned long inputfreqsel = 0;
+	int ret;
+
+	ret = clk_fs660c28_vco_get_params(*prate, rate, &ndiv, &inputfreqsel,
+					  &rate);
+	if (ret) {
+		return ret;
+	}
+
+	pr_debug("%s: %s new rate %ld [ndiv=%lu]\n",
+		 __func__, clk_hw_get_name(hw), rate, ndiv);
+
+	return rate;
+}
+
+static int quadfs_pll_fs660c28_set_rate(struct clk_hw *hw, unsigned long rate,
+					unsigned long parent_rate)
+{
+	struct st_clk_quadfs_pll *pll = to_quadfs_pll(hw);
+	long hwrate;
+	unsigned long flags = 0;
+	int ret;
+	unsigned long ndiv = 0;
+	unsigned long inputfreqsel = 0;
+
+	if (!rate || !parent_rate)
+		return -EINVAL;
+
+	ret = clk_fs660c28_vco_get_params(parent_rate, rate, &ndiv,
+					  &inputfreqsel, &hwrate);
+	if (ret)
+		return ret;
+
+	pr_debug("%s: %s new rate %ld [ndiv=0x%x]\n",
+		 __func__, clk_hw_get_name(hw),
+		 hwrate, (unsigned int)ndiv);
+
+	if (!hwrate)
+		return -EINVAL;
+
+	if (pll->lock)
+		spin_lock_irqsave(pll->lock, flags);
+
+	pll->ndiv = ndiv;
+	pll->inputfreqsel = inputfreqsel;
+	CLKGEN_WRITE(pll, inputfreqsel, pll->inputfreqsel);
+	CLKGEN_WRITE(pll, ndiv, pll->ndiv);
+
+	if (pll->lock)
+		spin_unlock_irqrestore(pll->lock, flags);
+
+	return 0;
+}
+
+static const struct clk_ops st_quadfs_pll_c28_ops = {
+	.enable		= quadfs_pll_enable,
+	.disable	= quadfs_pll_disable,
+	.is_enabled	= quadfs_pll_is_enabled,
+	.recalc_rate	= quadfs_pll_fs660c28_recalc_rate,
+	.round_rate	= quadfs_pll_fs660c28_round_rate,
+	.set_rate	= quadfs_pll_fs660c28_set_rate,
 };
 
 static struct clk * __init st_clk_register_quadfs_pll(
@@ -681,6 +895,115 @@ static int clk_fs660c32_dig_get_params(unsigned long input,
 	return 0;
 }
 
+static int clk_fs660c28_dig_get_rate(unsigned long input,
+				     const struct stm_fs *fs,
+				     unsigned long *rate)
+{
+	/*
+	 * 'nsdiv' is a register value ('BIN') which is translated
+	 * to a decimal value according to following rules.
+	 *
+	 *     nsdiv      ns.dec
+	 *       0        3
+	 *       1        1
+	 */
+	unsigned long s = (1 << fs->sdiv);
+	unsigned long ns = (fs->nsdiv == 1) ? 1 : 3;
+
+	*rate = (unsigned long)div64_u64(input * P20 * 32,
+			((u64)P20 * (32 + fs->mdiv) + 32 * fs->pe) * s * ns);
+	return 0;
+}
+
+static int clk_fs660c28_dig_get_params(unsigned long fvco,
+				       unsigned long output, struct stm_fs *fs)
+{
+	int si; /* sdiv_reg (8 downto 0) */
+	unsigned long ns; /* nsdiv value (1 or 3) */
+	unsigned long s; /* sdiv value = 1 << sdiv_reg */
+	unsigned long m; /* md value */
+	unsigned long new_freq, new_deviation;
+	/* initial condition to say: "infinite deviation" */
+	unsigned long deviation = ~0;
+	u64 p, tmp; /* pe value */
+	int ns_search_loop; /* How many ns search trials */
+
+	/*
+	 * *nsdiv is a register value ('BIN') which is translated
+	 * to a decimal value according to following rules.
+	 * In case nsdiv is hardwired, it must be set to 0xff before calling.
+	 *
+	 *   nsdiv      ns.dec
+	 *      ff        computed by this algo
+	 *       0        3
+	 *       1        1
+	 */
+	if (fs->nsdiv != 0xff) {
+		ns = (fs->nsdiv ? 1 : 3);
+		ns_search_loop = 1;
+	} else {
+		ns = 3;
+		ns_search_loop = 2;
+	}
+
+	/*
+	 * Try multiple NS values if allowed.  Then brute force every possible
+	 * combination of sdiv and md to find the closest possible clock rate
+	 * to output.  Break out early if an exact match is found.
+	 */
+	for (; ns_search_loop; ns_search_loop--) {
+		for (si = 8; si >= 0; si--) {
+			s = (1 << si);
+			for (m = 0; m < 32; m++) {
+				p = (u64)fvco * P20 * 32;
+				tmp = (32 + m) * ((u64)s * ns * output) * P20;
+				if (tmp > p)
+					break; /* Invalid */
+
+				p = div64_u64(p - tmp,
+					      (u64)s * ns * output * 32);
+				if (p > 32767LL)
+					continue;
+
+				/* Checking p & p+1 to cover division rounding
+				 */
+				for (tmp = 0; tmp <= 1; tmp++) {
+					struct stm_fs fs_tmp = {
+						.mdiv = m,
+						.sdiv = si,
+						.nsdiv = (ns == 1) ? 1 : 0,
+						.pe = (unsigned long)p + tmp,
+					};
+
+					if (clk_fs660c28_dig_get_rate(fvco,
+						&fs_tmp, &new_freq) != 0)
+						continue;
+
+					new_deviation = (new_freq < output) ?
+							   (output - new_freq) :
+							   (new_freq - output);
+
+					if (new_deviation < deviation) {
+						*fs = fs_tmp;
+						deviation = new_deviation;
+
+						if (!deviation) {
+							return 0;
+						}
+					}
+				}
+			}
+		}
+
+		ns -= 2;
+	}
+
+	if (deviation == ~0) /* No solution found */
+		return -1;
+
+	return 0;
+}
+
 static int quadfs_fsynt_get_hw_value_for_recalc(struct st_clk_quadfs_fsynth *fs,
 		struct stm_fs *params)
 {
@@ -961,6 +1284,12 @@ static void __init st_of_quadfs660C_setup(struct device_node *np)
 	st_of_quadfs_setup(np, (struct clkgen_quadfs_data *) &st_fs660c32_C);
 }
 CLK_OF_DECLARE(quadfs660C, "st,quadfs-pll", st_of_quadfs660C_setup);
+
+static void __init st_of_quadfs660C28_setup(struct device_node *np)
+{
+	st_of_quadfs_setup(np, (struct clkgen_quadfs_data *)&st_fs660c28_C);
+}
+CLK_OF_DECLARE(quadfs660C28, "st,quadfs-pll28", st_of_quadfs660C28_setup);
 
 static void __init st_of_quadfs660D_setup(struct device_node *np)
 {

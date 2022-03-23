@@ -8,4 +8,8 @@ config STIH407_RESET
 	bool
 	select STI_RESET_SYSCFG
 
+config GLLCFF_RESET
+	bool
+	select STI_RESET_SYSCFG
+
 endif

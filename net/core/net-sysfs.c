@@ -198,6 +198,36 @@ static ssize_t carrier_show(struct device *dev,
 }
 static DEVICE_ATTR_RW(carrier);
 
+#ifdef CONFIG_SPACEX
+static ssize_t speed_show(struct device *dev,
+			  struct device_attribute *attr, char *buf)
+{
+	struct net_device *netdev = to_net_dev(dev);
+	struct ethtool_link_ksettings cmd;
+	int ret = -EINVAL;
+
+	/* The check is also done in __ethtool_get_link_ksettings; this helps
+	 * returning early without hitting the trylock/restart below.
+	 */
+	if (!netdev->ethtool_ops->get_link_ksettings)
+		return ret;
+
+	if (!netif_running(netdev))
+		return ret;
+
+	if (!netif_carrier_ok(netdev))
+		return sprintf(buf, fmt_dec, SPEED_UNKNOWN);
+
+	if (!rtnl_trylock())
+		return restart_syscall();
+
+	if (!__ethtool_get_link_ksettings(netdev, &cmd))
+		ret = sprintf(buf, fmt_dec, cmd.base.speed);
+
+	rtnl_unlock();
+	return ret;
+}
+#else
 static ssize_t speed_show(struct device *dev,
 			  struct device_attribute *attr, char *buf)
 {
@@ -222,6 +252,7 @@ static ssize_t speed_show(struct device *dev,
 	rtnl_unlock();
 	return ret;
 }
+#endif /* CONFIG_SPACEX */
 static DEVICE_ATTR_RO(speed);
 
 static ssize_t duplex_show(struct device *dev,

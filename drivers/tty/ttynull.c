@@ -10,7 +10,11 @@
 #include <linux/module.h>
 #include <linux/tty.h>
 
+#ifdef CONFIG_SPACEX
+static const struct tty_port_operations ttynull_port_ops = { };
+#else
 static const struct tty_port_operations ttynull_port_ops;
+#endif /* CONFIG_SPACEX */
 static struct tty_driver *ttynull_driver;
 static struct tty_port ttynull_port;
 
@@ -54,9 +58,18 @@ static struct tty_driver *ttynull_device(struct console *c, int *index)
 	return ttynull_driver;
 }
 
+#ifdef CONFIG_SPACEX
+static void ttynull_console_write(struct console *co, const char *s, unsigned count)
+{
+}
+#endif /* CONFIG_SPACEX */
+
 static struct console ttynull_console = {
 	.name = "ttynull",
 	.device = ttynull_device,
+#ifdef CONFIG_SPACEX
+	.write = ttynull_console_write,
+#endif /* CONFIG_SPACEX */
 };
 
 static int __init ttynull_init(void)
@@ -76,6 +89,10 @@ static int __init ttynull_init(void)
 
 	driver->driver_name = "ttynull";
 	driver->name = "ttynull";
+#ifdef CONFIG_SPACEX
+	driver->major = TTY_MAJOR;
+	driver->minor_start = 1;
+#endif
 	driver->type = TTY_DRIVER_TYPE_CONSOLE;
 	driver->init_termios = tty_std_termios;
 	driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;

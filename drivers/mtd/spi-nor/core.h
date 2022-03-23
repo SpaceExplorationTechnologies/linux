@@ -26,6 +26,10 @@ enum spi_nor_option_flags {
 	SNOR_F_HAS_SR_TB_BIT6	= BIT(11),
 	SNOR_F_HAS_4BIT_BP      = BIT(12),
 	SNOR_F_HAS_SR_BP3_BIT6  = BIT(13),
+	SNOR_F_USE_DUAL_CHIP	= BIT(14),
+#ifdef CONFIG_SPACEX
+	SNOR_F_USE_STRIPE	= BIT(15),
+#endif /* CONFIG_SPACEX */
 };
 
 struct spi_nor_read_command {
@@ -314,6 +318,13 @@ struct flash_info {
 
 	/* Part specific fixup hooks. */
 	const struct spi_nor_fixups *fixups;
+
+#ifdef CONFIG_SPACEX
+	/* The number of dies in the package. Note that a value of 0
+	 * is the same as a value set to 1.
+	 */
+	u8		n_dies;
+#endif /* CONFIG_SPACEX */
 };
 
 /* Used when the "_ext_id" is two bytes at most */
@@ -330,6 +341,15 @@ struct flash_info {
 		.n_sectors = (_n_sectors),				\
 		.page_size = 256,					\
 		.flags = (_flags),
+
+#ifdef CONFIG_SPACEX
+#define INFO_MULTI_DIE(_jedec_id, _ext_id, _sector_size, _n_sectors,	\
+		       _n_dies, _flags)					\
+		INFO((_jedec_id), (_ext_id), (_sector_size),		\
+		     (_n_sectors), (_flags)	)			\
+		.n_dies = (_n_dies),
+#endif /* CONFIG_SPACEX */
+
 
 #define INFO6(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
 		.id = {							\

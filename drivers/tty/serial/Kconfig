@@ -1435,7 +1435,8 @@ config SERIAL_CONEXANT_DIGICOLOR_CONSOLE
 config SERIAL_ST_ASC
 	tristate "ST ASC serial port support"
 	select SERIAL_CORE
-	depends on ARM || COMPILE_TEST
+	select SERIAL_EARLYCON
+	depends on ARCH_STI || COMPILE_TEST
 	help
 	  This driver is for the on-chip Asychronous Serial Controller on
 	  STMicroelectronics STi SoCs.

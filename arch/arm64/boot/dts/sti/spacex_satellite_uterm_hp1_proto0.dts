@@ -1,0 +1,152 @@
+/*
+ * Copyright (C) 2018 STMicroelectronics (R&D) Limited.
+ * Author: Nicolas Toromanoff <nicolas.toromanoff@st.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "spacex_satellite_uterm_cut4.dtsi"
+#include "spacex_satellite_uterm_production.dtsi"
+#include "spacex_satellite_uterm_imu_spi0.dtsi"
+
+/ {
+	aliases {
+		i2c3 = &i2c3;
+	};
+
+	gpios {
+		/*
+		 * GPS.
+		 */
+		gps_boot  = <&pio22 7 2>; /* 2=inverted */
+		gps_reset = <&pio21 6 1>; /* 0=reset, 1=run */
+
+		/*
+		 * Reset.
+		 */
+		self_reset = <&pio30 1 1>;   /* 0=reset */
+
+		/*
+		 * Antenna (DBFs + FEMs).
+		 */
+		ant_power = <&pio32 1 0>; /* 1=power 0.95/1.0/1.8V */
+
+		/*
+		 * Shiraz (digital beamformers).
+		 */
+		dbf_reset   = <&pio22 0 0>;
+		dbf_v0p9_ok = <&pio32 3>;
+
+		/*
+		 * Pulsar (Front-End Modules).
+		 */
+		fem_v1p8_ok = <&pio32 0>;
+
+		/*
+		 * Cady (clockgen).
+		 */
+		cady_power = <&pio20 7 0>;
+
+		/*
+		 * STSAFE reset, active low.
+		 */
+		stsafe_reset = <&pio32 4 0>;
+
+		/*
+		 * Watchdog toggle. Must be toggled at least once in 144.
+		 * seconds. Must stop toggling if self_reset is low.
+		 */
+		watchdog_toggle = <&pio31 6 0>;
+
+		/*
+		 * Motors reversed from schematic (1 -> 2).
+		 */
+		motor_nsleep = <&pio31 2 0>;
+		motor_nfault = <&pio23 6>;
+		motor1_ph    = <&pio31 4 0>;
+		motor2_ph    = <&pio23 0 0>;
+
+		/*
+		 * AVS
+		 */
+		avs_b0  = <&pio10 4 0>;
+		avs_b1  = <&pio0 3 0>;
+		avs_b2  = <&pio0 0 0>;
+		avs_b3  = <&pio0 4 0>;
+		avs_b4  = <&pio0 1 0>;
+		avs_nen = <&pio10 3 1>; /* Disabled by default */
+
+		/*
+		 * Fast idle detection. This signal is outputted from the power
+		 * supply when it detects loss of AC. Swapped with otp_psu in
+		 * schematic 06600010-502 Rev 6. This mapping is actual.
+		 */
+		fast_idle = <&pio12 7>;
+
+		/*
+		 * Over-Temperature Protection warning from the power supply.
+		 */
+		otp_psu = <&pio12 6>;
+
+		/*
+		 * Heaters. All inverted outputs. Default to off by holding pin
+		 * electrically high.
+		 */
+		heater_cat_en = <&pio30 2 2 1>; /* 2=inverted, 1=off */
+		heater_1_en   = <&pio10 2 2 1>; /* 2=inverted, 1=off */
+		heater_2_en   = <&pio10 5 2 1>; /* 2=inverted, 1=off */
+		heater_3_en   = <&pio11 4 2 1>; /* 2=inverted, 1=off */
+		heater_4_en   = <&pio11 6 2 1>; /* 2=inverted, 1=off */
+	};
+
+	pwms {
+		/*
+		 * Heaters.
+		 */
+		heater = <&pwm0 0>;
+	};
+
+	soc {
+		/*
+		 * ADC temp sensors, voltage, and current monitors.
+		 */
+		telemetry_adc: sti_adc@8900000 {
+			use-external = <1 0 0 0 0 1 0 1>;
+		};
+
+		/*
+		 * I2C3 for controlling the MP8892 PMIC for AVS.
+		 */
+		i2c3: i2c3@8840000 {
+			clock-frequency = <100000>;
+			status = "okay";
+		};
+
+		/*
+		 * I2C4 (SCL:PIO23[3],SDA:PIO23[4]) for talking to STSAFE IC.
+		 */
+		i2c4: i2c4@8910000 {
+			status = "okay";
+		};
+
+		/*
+		 * 8-bit channel avs0 used for heater PWM.
+		 * 16-bit channels pwm2 and pwm3 used for motors.
+		 */
+		pwm0: pwm@8800000 {
+			pinctrl-0 = <&pinctrl_pwm_avs0_default
+				&pinctrl_pwm2_default
+				&pinctrl_pwm3_default>;
+		};
+
+		/*
+		 * SCPLITE data is on PIO32[2].
+		 */
+		catson_scp0: scp0@c700000 {
+			pinctrl-0 = <&pinctrl_scp_lite_pio32>;
+		};
+	};
+};

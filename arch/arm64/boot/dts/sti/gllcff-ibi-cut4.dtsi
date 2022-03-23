@@ -1,0 +1,1296 @@
+/* file generated from excel sheet : xxx_perf_info_v4.0_V4.xlsm*/
+/* author : Claire Bonnet*/
+/* date : 11/2/2020 */
+
+#include <dt-bindings/ibi/ibi.h>
+
+/ {
+ soc {
+    ibi_ipplugaxi_sx_mdm_rx_rd: ibi_ipplugaxi_sx_mdm_rx_rd@C030000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC030000 0x200>;
+
+        ibi_ipplugaxi_sx_mdm_rx_rd_default: ibi_ipplugaxi_sx_mdm_rx_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <3072>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <8>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <3072>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_sx_mdm_rx_wr: ibi_ipplugaxi_sx_mdm_rx_wr@C031000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC031000 0x200>;
+
+        ibi_ipplugaxi_sx_mdm_rx_wr_default: ibi_ipplugaxi_sx_mdm_rx_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <9>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2048>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_sx_mdm_tx_rd: ibi_ipplugaxi_sx_mdm_tx_rd@C120000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC120000 0x200>;
+
+        ibi_ipplugaxi_sx_mdm_tx_rd_default: ibi_ipplugaxi_sx_mdm_tx_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <8>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2048>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_sx_mdm_tx_wr: ibi_ipplugaxi_sx_mdm_tx_wr@C121000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC121000 0x200>;
+
+        ibi_ipplugaxi_sx_mdm_tx_wr_default: ibi_ipplugaxi_sx_mdm_tx_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <9>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2048>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_sx_ntw_rd: ibi_ipplugaxi_sx_ntw_rd@C20E800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC20E800 0x200>;
+
+        ibi_ipplugaxi_sx_ntw_rd_default: ibi_ipplugaxi_sx_ntw_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client11 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client12 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client13 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client14 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client15 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1792>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_rd_satelliteTX: ibi_ipplugaxi_sx_ntw_rd_satelliteTX {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2496>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2496>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client11 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client12 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client13 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client14 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client15 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_rd_satelliteRX: ibi_ipplugaxi_sx_ntw_rd_satelliteRX {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <4992>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client11 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client12 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client13 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client14 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client15 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_rd_UserTerminal: ibi_ipplugaxi_sx_ntw_rd_UserTerminal {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2016>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1808>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1216>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1024>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <384>; /* Bytes */
+            };
+            client11 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <640>; /* Bytes */
+            };
+            client12 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client13 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client14 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <384>; /* Bytes */
+            };
+            client15 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <6>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <640>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_sx_ntw_wr: ibi_ipplugaxi_sx_ntw_wr@C20E000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC20E000 0x200>;
+
+        ibi_ipplugaxi_sx_ntw_wr_default: ibi_ipplugaxi_sx_ntw_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1280>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1280>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <896>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <896>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <896>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <896>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_wr_satelliteTX: ibi_ipplugaxi_sx_ntw_wr_satelliteTX {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <4224>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <32>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <64>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_wr_satelliteRX: ibi_ipplugaxi_sx_ntw_wr_satelliteRX {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2112>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2112>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <32>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <64>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_sx_ntw_wr_UserTerminal: ibi_ipplugaxi_sx_ntw_wr_UserTerminal {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <11264>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2048>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <3952>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <512>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <768>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client8 {
+                st,burst-max-size = <32>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <64>; /* Bytes */
+            };
+            client9 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+            client10 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <7>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_scp_rd: ibi_ipplugaxi_scp_rd@C701000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC701000 0x200>;
+
+        ibi_ipplugaxi_scp_rd_default: ibi_ipplugaxi_scp_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <768>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <4>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <4>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <4>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_scp_wr: ibi_ipplugaxi_scp_wr@C701800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC701800 0x200>;
+
+        ibi_ipplugaxi_scp_wr_default: ibi_ipplugaxi_scp_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <768>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <5>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <5>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <5>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <256>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_spi_rd: ibi_ipplugaxi_spi_rd@1E301000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0x1E301000 0x200>;
+
+        ibi_ipplugaxi_spi_rd_default: ibi_ipplugaxi_spi_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <256>; /* Bytes */
+            client0 {
+                st,burst-max-size = <64>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <128>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <64>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <128>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_spi_rd_spi1_only: ibi_ipplugaxi_spi_rd_spi1_only {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <256>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <240>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_spi_wr: ibi_ipplugaxi_spi_wr@1E300800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0x1E300800 0x200>;
+
+        ibi_ipplugaxi_spi_wr_default: ibi_ipplugaxi_spi_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <256>; /* Bytes */
+            client0 {
+                st,burst-max-size = <64>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <128>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <64>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <128>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_spi_wr_spi1_only: ibi_ipplugaxi_spi_wr_spi1_only {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <64>; /* bits */
+            st,dpreg-total-size = <256>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <240>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <8>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <16>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_adc_rd: ibi_ipplugaxi_dt_adc_rd@C901000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC901000 0x200>;
+
+        ibi_ipplugaxi_dt_adc_rd_default: ibi_ipplugaxi_dt_adc_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <4096>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <10>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <4096>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_adc_wr: ibi_ipplugaxi_dt_adc_wr@C901800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC901800 0x200>;
+
+        ibi_ipplugaxi_dt_adc_wr_default: ibi_ipplugaxi_dt_adc_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <11>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <2048>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_dac_xphy_rd: ibi_ipplugaxi_dt_dac_xphy_rd@C801000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC801000 0x200>;
+
+        ibi_ipplugaxi_dt_dac_xphy_rd_default: ibi_ipplugaxi_dt_dac_xphy_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <4096>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <10>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <4032>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <10>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_dac_xphy_wr: ibi_ipplugaxi_dt_dac_xphy_wr@C801800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xC801800 0x200>;
+
+        ibi_ipplugaxi_dt_dac_xphy_wr_default: ibi_ipplugaxi_dt_dac_xphy_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <11>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1984>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <11>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_cpl_rd: ibi_ipplugaxi_dt_cpl_rd@CA01000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xCA01000 0x200>;
+
+        ibi_ipplugaxi_dt_cpl_rd_default: ibi_ipplugaxi_dt_cpl_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <4096>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1328>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1328>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1328>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <12>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_cpl_wr: ibi_ipplugaxi_dt_cpl_wr@CA01800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xCA01800 0x200>;
+
+        ibi_ipplugaxi_dt_cpl_wr_default: ibi_ipplugaxi_dt_cpl_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <640>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <640>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <640>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <13>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_ml_rd: ibi_ipplugaxi_dt_ml_rd@CB01000 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xCB01000 0x200>;
+
+        ibi_ipplugaxi_dt_ml_rd_default: ibi_ipplugaxi_dt_ml_rd_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <4096>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <3872>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_dt_ml_rd_clients_5_7_active: ibi_ipplugaxi_dt_ml_rd_clients_5_7_active {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <4096>; /* Bytes */
+            client0 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1952>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <14>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1952>; /* Bytes */
+            };
+        };
+    };
+    ibi_ipplugaxi_dt_ml_wr: ibi_ipplugaxi_dt_ml_wr@CB01800 {
+        compatible = "st,ibi-ipplug-axi";
+        reg = <0x0 0xCB01800 0x200>;
+
+        ibi_ipplugaxi_dt_ml_wr_default: ibi_ipplugaxi_dt_ml_wr_default {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <1824>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+        };
+        ibi_ipplugaxi_dt_ml_wr_clients_5_7_active: ibi_ipplugaxi_dt_ml_wr_clients_5_7_active {
+            st,memory-page-size = <128>; /* Bytes */
+            st,bus-size = <128>; /* bits */
+            st,dpreg-total-size = <2048>; /* Bytes */
+            client0 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client1 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client2 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client3 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client4 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client5 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <928>; /* Bytes */
+            };
+            client6 {
+                st,burst-max-size = <16>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <32>; /* Bytes */
+            };
+            client7 {
+                st,burst-max-size = <128>; /* Bytes */
+                st,svc = /bits/ 8 <15>;
+                st,outstanding-packets = <0>; /* 0 means no_limit ; other value in packets */
+                st,dpreg-size = <928>; /* Bytes */
+            };
+        };
+    };
+ };
+};

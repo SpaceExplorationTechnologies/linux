@@ -17,6 +17,9 @@
 #include <asm/pointer_auth.h>
 #include <asm/stack_pointer.h>
 #include <asm/stacktrace.h>
+#ifdef CONFIG_SPACEX
+#include <asm/uaccess.h>
+#endif /* CONFIG_SPACEX */
 
 /*
  * AArch64 PCS assigns the frame pointer to x29.
@@ -84,6 +87,9 @@ int notrace unwind_frame(struct task_struct *tsk, struct stackframe *frame)
 	frame->pc = READ_ONCE_NOCHECK(*(unsigned long *)(fp + 8));
 	frame->prev_fp = fp;
 	frame->prev_type = info.type;
+#ifdef CONFIG_SPACEX
+	frame->sp = 0;
+#endif
 
 #ifdef CONFIG_FUNCTION_GRAPH_TRACER
 	if (tsk->ret_stack &&
@@ -217,5 +223,87 @@ noinline notrace void arch_stack_walk(stack_trace_consume_fn consume_entry,
 
 	walk_stackframe(task, &frame, consume_entry, cookie);
 }
+
+#ifdef CONFIG_SPACEX
+
+/*
+ * Essentially a copy of unwind_frame() above, but unwinds a single frame from
+ * the userspace stack. Unlike unwind_frame(), assumes there is only one stack.
+ */
+static int notrace unwind_frame_user(struct stackframe *frame)
+{
+	unsigned long fp = frame->fp;
+
+	if (fp & 0xf)
+		return -EINVAL;
+
+	if (test_bit(STACK_TYPE_TASK, frame->stacks_done))
+		return -EINVAL;
+
+	/*
+	 * As the stack grows downward, any valid record on the stack must be
+	 * at a strictly higher address than the prior record.
+	 *
+	 * There is only one used more stack, so we hard-code STACK_TYPE_TASK here.
+	 */
+	if (STACK_TYPE_TASK == frame->prev_type) {
+		if (fp <= frame->prev_fp)
+			return -EINVAL;
+	} else {
+		set_bit(frame->prev_type, frame->stacks_done);
+	}
+
+	/*
+	 * Record this frame record's values and location. The prev_fp and
+	 * prev_type are only meaningful to the next unwind_frame() invocation.
+	 */
+	pagefault_disable();
+	__get_user(frame->fp, (unsigned long *)(fp));
+	__get_user(frame->pc, (unsigned long *)(fp + 8));
+	pagefault_enable();
+	frame->prev_fp = fp;
+	frame->prev_type = STACK_TYPE_TASK;
+	frame->sp = 0;
+
+	/*
+	 * Frames created upon entry from EL0 have NULL FP and PC values, so
+	 * don't bother reporting these. Frames created by __noreturn functions
+	 * might have a valid FP even if PC is bogus, so only terminate where
+	 * both are NULL.
+	 */
+	if (!frame->fp && !frame->pc)
+		return -EINVAL;
+
+	return 0;
+}
+
+static void notrace walk_stackframe_user(struct stackframe *frame,
+					 bool (*fn)(void *, unsigned long),
+					 void *data)
+{
+	while (1) {
+		int ret;
+
+		if (!fn(data, frame->pc))
+			break;
+		ret = unwind_frame_user(frame);
+		if (ret < 0)
+			break;
+	}
+}
+
+/*
+ * Similar to arch_stack_walk() above, but walks the userspace stack instead.
+ */
+void arch_stack_walk_user(stack_trace_consume_fn consume_entry, void *cookie,
+			  const struct pt_regs *regs)
+{
+	struct stackframe frame;
+
+	start_backtrace(&frame, regs->regs[29], regs->pc);
+	walk_stackframe_user(&frame, consume_entry, cookie);
+}
+
+#endif /* CONFIG_SPACEX */
 
 #endif

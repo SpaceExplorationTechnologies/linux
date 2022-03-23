@@ -1457,6 +1457,13 @@ static const struct pmbus_limit_attr vout_limit_attrs[] = {
 		.reg = PMBUS_MFR_VOUT_MAX,
 		.attr = "rated_max",
 	},
+#ifdef CONFIG_SPACEX
+	{
+		.reg = PMBUS_VOUT_COMMAND,
+		.update = true,
+		.attr = "command"
+	}
+#endif
 };
 
 static const struct pmbus_sensor_attr voltage_attributes[] = {
@@ -2147,6 +2154,9 @@ static int pmbus_identify_common(struct i2c_client *client,
 		 */
 		switch (vout_mode >> 5) {
 		case 0:	/* linear mode      */
+#ifdef CONFIG_SPACEX
+		case 4: /* linear relative mode */
+#endif
 			if (data->info->format[PSC_VOLTAGE_OUT] != linear)
 				return -ENODEV;
 

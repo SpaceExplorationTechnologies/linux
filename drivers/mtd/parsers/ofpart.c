@@ -39,7 +39,39 @@ static int parse_fixed_partitions(struct mtd_info *master,
 	if (!mtd_node)
 		return 0;
 
+#ifndef CONFIG_SPACEX
 	ofpart_node = of_get_child_by_name(mtd_node, "partitions");
+#else /* !CONFIG_SPACEX */
+	for_each_child_of_node(mtd_node, ofpart_node) {
+		/*
+		 * Skip partitions if they have a valid size specified in the
+		 * "reg" property and the size does not match the mtd size.
+		 */
+		if (ofpart_node->name &&
+		    (of_node_cmp(ofpart_node->name, "partitions") == 0)) {
+			const __be32 *reg;
+			int len;
+			int a_cells, s_cells;
+			uint64_t size;
+
+			reg = of_get_property(ofpart_node, "reg", &len);
+			if (!reg)
+				break;
+
+			a_cells = of_n_addr_cells(ofpart_node);
+			s_cells = of_n_size_cells(ofpart_node);
+			if (len / 4 != a_cells + s_cells)
+				break;
+
+			size = of_read_number(reg + a_cells, s_cells);
+			if (size == master->size)
+				break;
+		}
+	}
+	if (!ofpart_node && of_get_child_by_name(mtd_node, "partitions"))
+		pr_warn("%s: partitions found for '%s' but none match flash size '0x%08llx'.\n",
+			master->name, mtd_node->full_name, master->size);
+#endif /* CONFIG_SPACEX */
 	if (!ofpart_node) {
 		/*
 		 * We might get here even when ofpart isn't used at all (e.g.,
